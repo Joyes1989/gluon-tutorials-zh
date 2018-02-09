@@ -336,3 +336,4 @@ def train_and_predict_rnn(rnn, is_random_iter, epochs, num_steps, hidden_dim,
                       is_lstm))
             print()
 
+# add_test by joyes
