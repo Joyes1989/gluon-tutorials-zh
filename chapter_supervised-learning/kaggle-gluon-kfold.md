@@ -3,7 +3,7 @@
 本章介绍如何使用``Gluon``来实战[Kaggle比赛](https://www.kaggle.com)。我们以[房价预测问题](https://www.kaggle.com/c/house-prices-advanced-regression-techniques)为例，为大家提供一整套实战中常常需要的工具，例如**K折交叉验证**。我们还以``pandas``为工具介绍如何对**真实世界**中的数据进行重要的预处理，例如：
 
 * 处理离散数据
-* 处理丢失的数据特征
+* 处理丢失的数据特征 --- feture缺失
 * 对数据进行标准化
 
 需要注意的是，本章仅提供一些基本实战流程供大家参考。对于数据的预处理、模型的设计和参数的选择等，我们特意只提供最基础的版本。希望大家一定要通过动手实战、仔细观察实验现象、认真分析实验结果并不断调整方法，从而得到令自己满意的结果。
@@ -218,6 +218,7 @@ def k_fold_cross_valid(k, epochs, verbose_epoch, X_train, y_train,
                     y_val_train = y_cur_fold
                     val_train_defined = True
                 else:
+                    print(type(X_val_train), type(X_cur_fold), type(X_train))
                     X_val_train = nd.concat(X_val_train, X_cur_fold, dim=0)
                     y_val_train = nd.concat(y_val_train, y_cur_fold, dim=0)
         net = get_net()

@@ -21,8 +21,9 @@
 
 我们使用`nd.Convolution`来演示这个。
 
-```{.python .input  n=47}
+```{.python .input  n=15}
 from mxnet import nd
+import mxnet as mx
 
 # 输入输出数据格式是 batch x channel x height x width，这里batch和channel都是1
 # 权重格式是 output_channels x in_channels x height x width，这里input_filter和output_filter都是1。
@@ -35,12 +36,19 @@ print('input:', data, '\n\nweight:', w, '\n\nbias:', b, '\n\noutput:', out)
 ```
 
 我们可以控制如何移动窗口，和在边缘的时候如何填充窗口。下图演示了`stride=2`和`pad=1`。
+>参数化形式为: stride = (2, 2), 表示每两次移动之间横向纵向相隔2个像素
+
+>参数化形式为: pad=(1, 1), 表示在原有的图形(矩阵)外围,补充一个像素的空像素点
 
 ![](../img/padding_strides.gif)
 
-```{.python .input  n=48}
+```{.python .input  n=16}
 out = nd.Convolution(data, w, b, kernel=w.shape[2:], num_filter=w.shape[1],
-                     stride=(2,2), pad=(1,1))
+                     stride=(2,2), pad=(2,1))
+
+### > stride=(2, 2), 表示没两次操作间,横向相差2个像素,纵向相差2个像素
+
+### > pad=(1, 1),表示横向向外围增加一层像素,纵向向外围增加一层像素
 
 print('input:', data, '\n\nweight:', w, '\n\nbias:', b, '\n\noutput:', out)
 ```
@@ -49,7 +57,7 @@ print('input:', data, '\n\nweight:', w, '\n\nbias:', b, '\n\noutput:', out)
 
 $$conv(data, w, b) = \sum_i conv(data[:,i,:,:], w[:,i,:,:], b)$$
 
-```{.python .input  n=49}
+```{.python .input  n=20}
 w = nd.arange(8).reshape((1,2,2,2))
 data = nd.arange(18).reshape((1,2,3,3))
 
@@ -58,11 +66,29 @@ out = nd.Convolution(data, w, b, kernel=w.shape[2:], num_filter=w.shape[0])
 print('input:', data, '\n\nweight:', w, '\n\nbias:', b, '\n\noutput:', out)
 ```
 
+```{.python .input  n=23}
+###  可以将上面的例子,
+### 按照之前的使用GPU的方法(gluon-tutorials-zh/chapter_gluon-basics/use-gpu.md)
+### 放到GPU上执行:
+
+w = nd.arange(8).reshape((1,2,2,2))
+data = nd.arange(18).reshape((1,2,3,3))
+
+g_w = w.as_in_context(mx.gpu())
+g_data = data.as_in_context(mx.gpu())
+g_b = b.as_in_context(mx.gpu())
+
+out = nd.Convolution(g_data, g_w, g_b, kernel=g_w.shape[2:], num_filter=g_w.shape[0])
+
+
+print('input:', g_data, '\n\nweight:', g_w, '\n\nbias:', b, '\n\noutput:', out)
+```
+
 当输出需要多通道时，每个输出通道有对应权重，然后每个通道上做卷积。
 
 $$conv(data, w, b)[:,i,:,:] = conv(data, w[i,:,:,:], b[i])$$
 
-```{.python .input  n=50}
+```{.python .input  n=24}
 w = nd.arange(16).reshape((2,2,2,2))
 data = nd.arange(18).reshape((1,2,3,3))
 b = nd.array([1,2])
@@ -76,8 +102,11 @@ print('input:', data, '\n\nweight:', w, '\n\nbias:', b, '\n\noutput:', out)
 
 因为卷积层每次作用在一个窗口，它对位置很敏感。池化层能够很好的缓解这个问题。它跟卷积类似每次看一个小窗口，然后选出窗口里面最大的元素，或者平均元素作为输出。
 
+> 避免卷积对于图像中的具体位置关系过于敏感，使得物体的识别更通用。
+
 ```{.python .input  n=53}
-data = nd.arange(18).reshape((1,2,3,3))
+data = nd.arange(18).reshape((1,2,3,3))  # cpu-version
+#\data = nd.arange(18).reshape((1,2,3,3)).as_in_context(mx.gpu())  # gpu-version
 
 max_pool = nd.Pooling(data=data, pool_type="max", kernel=(2,2))
 avg_pool = nd.Pooling(data=data, pool_type="avg", kernel=(2,2))

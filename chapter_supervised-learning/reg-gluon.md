@@ -58,6 +58,8 @@ def train(weight_decay):
     # 注意到这里 'wd'
     trainer = gluon.Trainer(net.collect_params(), 'sgd', {
         'learning_rate': learning_rate, 'wd': weight_decay})
+    # weight_decay的作用：用于在trainer中更新w
+    # w = w - lr * grad - weight_decay * w
     
     train_loss = []
     test_loss = []

@@ -8,53 +8,112 @@
 
 首先需要确保至少有一块Nvidia显卡已经安装好了，然后下载安装显卡驱动和[CUDA](https://developer.nvidia.com/cuda-downloads)（推荐下载8.0，CUDA自带了驱动）。完成后应该可以通过`nvidia-smi`查看显卡信息了。（Windows用户需要设一下PATH：`set PATH=C:\Program Files\NVIDIA Corporation\NVSMI;%PATH%`）。
 
-```{.python .input  n=1}
+```{.python .input  n=9}
 !nvidia-smi
+```
+
+```{.json .output n=9}
+[
+ {
+  "name": "stderr",
+  "output_type": "stream",
+  "text": "'nvidia-smi' \u4e0d\u662f\u5185\u90e8\u6216\u5916\u90e8\u547d\u4ee4\uff0c\u4e5f\u4e0d\u662f\u53ef\u8fd0\u884c\u7684\u7a0b\u5e8f\n\u6216\u6279\u5904\u7406\u6587\u4ef6\u3002\n"
+ }
+]
 ```
 
 接下来要要确认正确安装了的`mxnet`的GPU版本。具体来说是卸载了`mxnet`（`pip uninstall mxnet`），然后根据CUDA版本安装`mxnet-cu75`或者`mxnet-cu80`（例如`pip install --pre mxnet-cu80`）。
 
 使用pip来确认下：
 
-```{.python .input  n=2}
+```{.python .input  n=8}
 import pip
 for pkg in ['mxnet', 'mxnet-cu75', 'mxnet-cu80']:
     pip.main(['show', pkg])
+```
+
+```{.json .output n=8}
+[
+ {
+  "name": "stdout",
+  "output_type": "stream",
+  "text": "Name: mxnet-cu80\nVersion: 0.11.1b20170923\nSummary: MXNet is an ultra-scalable deep learning framework. This version uses CUDA-8.0.\nHome-page: https://github.com/dmlc/mxnet\nAuthor: UNKNOWN\nAuthor-email: UNKNOWN\nLicense: Apache 2.0\nLocation: c:\\programdata\\anaconda3\\lib\\site-packages\nRequires: numpy\n"
+ }
+]
 ```
 
 ## Context
 
 MXNet使用Context来指定使用哪个设备来存储和计算。默认会将数据开在主内存，然后利用CPU来计算，这个由`mx.cpu()`来表示。GPU则由`mx.gpu()`来表示。注意`mx.cpu()`表示所有的物理CPU和内存，意味着计算上会尽量使用多有的CPU核。但`mx.gpu()`只代表一块显卡和其对应的显卡内存。如果有多块GPU，我们用`mx.gpu(i)`来表示第*i*块GPU（*i*从0开始）。
 
-```{.python .input  n=3}
+```{.python .input  n=11}
 import mxnet as mx
 [mx.cpu(), mx.gpu(), mx.gpu(1)]
+```
+
+```{.json .output n=11}
+[
+ {
+  "data": {
+   "text/plain": "[cpu(0), gpu(0), gpu(1)]"
+  },
+  "execution_count": 11,
+  "metadata": {},
+  "output_type": "execute_result"
+ }
+]
 ```
 
 ## NDArray的GPU计算
 
 每个NDArray都有一个`context`属性来表示它存在哪个设备上，默认会是`cpu`。这是为什么前面每次我们打印NDArray的时候都会看到`@cpu(0)`这个标识。
 
-```{.python .input  n=4}
+```{.python .input  n=12}
 from mxnet import nd
 x = nd.array([1,2,3])
 x.context
+```
+
+```{.json .output n=12}
+[
+ {
+  "data": {
+   "text/plain": "cpu(0)"
+  },
+  "execution_count": 12,
+  "metadata": {},
+  "output_type": "execute_result"
+ }
+]
 ```
 
 ### GPU上创建内存
 
 我们可以在创建的时候指定创建在哪个设备上（如果GPU不能用或者没有装MXNet GPU版本，这里会有error）：
 
-```{.python .input  n=5}
+```{.python .input  n=13}
 a = nd.array([1,2,3], ctx=mx.gpu())
 b = nd.zeros((3,2), ctx=mx.gpu())
 c = nd.random.uniform(shape=(2,3), ctx=mx.gpu())
 (a,b,c)
 ```
 
+```{.json .output n=13}
+[
+ {
+  "data": {
+   "text/plain": "(\n [ 1.  2.  3.]\n <NDArray 3 @gpu(0)>, \n [[ 0.  0.]\n  [ 0.  0.]\n  [ 0.  0.]]\n <NDArray 3x2 @gpu(0)>, \n [[ 0.74021935  0.9209938   0.03902049]\n  [ 0.96896291  0.92514056  0.4463501 ]]\n <NDArray 2x3 @gpu(0)>)"
+  },
+  "execution_count": 13,
+  "metadata": {},
+  "output_type": "execute_result"
+ }
+]
+```
+
 尝试将内存开到另外一块GPU上。如果不存在会报错。当然，如果你有大于10块GPU，那么下面代码会顺利执行。
 
-```{.python .input  n=6}
+```{.python .input  n=15}
 import sys
 
 try:
@@ -63,20 +122,56 @@ except mx.MXNetError as err:
     sys.stderr.write(str(err))
 ```
 
+```{.json .output n=15}
+[
+ {
+  "name": "stderr",
+  "output_type": "stream",
+  "text": "[09:02:53] D:\\Program Files (x86)\\Jenkins\\workspace\\mxnet\\mxnet\\src\\storage\\storage.cc:59: Check failed: e == cudaSuccess || e == cudaErrorCudartUnloading CUDA: invalid device ordinal"
+ }
+]
+```
+
 我们可以通过`copyto`和`as_in_context`来在设备直接传输数据。
 
-```{.python .input  n=7}
+```{.python .input  n=16}
 y = x.copyto(mx.gpu())
 z = x.as_in_context(mx.gpu())
 (y, z)
 ```
 
+```{.json .output n=16}
+[
+ {
+  "data": {
+   "text/plain": "(\n [ 1.  2.  3.]\n <NDArray 3 @gpu(0)>, \n [ 1.  2.  3.]\n <NDArray 3 @gpu(0)>)"
+  },
+  "execution_count": 16,
+  "metadata": {},
+  "output_type": "execute_result"
+ }
+]
+```
+
 这两个函数的主要区别是，如果源和目标的context一致，`as_in_context`不复制，而`copyto`总是会新建内存：
 
-```{.python .input  n=8}
+```{.python .input  n=17}
 yy = y.as_in_context(mx.gpu())
 zz = z.copyto(mx.gpu())
 (yy is y, zz is z)
+```
+
+```{.json .output n=17}
+[
+ {
+  "data": {
+   "text/plain": "(True, False)"
+  },
+  "execution_count": 17,
+  "metadata": {},
+  "output_type": "execute_result"
+ }
+]
 ```
 
 ### GPU上的计算

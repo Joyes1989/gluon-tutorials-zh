@@ -34,10 +34,20 @@ data_iter = gluon.data.DataLoader(dataset, batch_size, shuffle=True)
 
 读取跟前面一致：
 
-```{.python .input  n=5}
+```{.python .input  n=4}
 for data, label in data_iter:
     print(data, label)
     break
+```
+
+```{.json .output n=4}
+[
+ {
+  "name": "stdout",
+  "output_type": "stream",
+  "text": "\n[[ 1.44363678  0.23566863]\n [ 0.74154735 -0.91524261]\n [ 0.37318835  0.97454745]\n [-1.84228015  0.1376639 ]\n [ 0.75891364  1.82345355]\n [-2.54054928  0.08625745]\n [-0.05902342 -1.00428152]\n [-0.4590835   2.09327912]\n [ 0.15819176  0.01024458]\n [ 0.62029344 -2.02228761]]\n<NDArray 10x2 @cpu(0)> \n[  6.28243923   8.80110741   1.65375185   0.06398872  -0.47461665\n  -1.17649508   7.49914742  -3.83174181   4.48397636  12.3198843 ]\n<NDArray 10 @cpu(0)>\n"
+ }
+]
 ```
 
 ## 定义模型
@@ -101,15 +111,76 @@ for e in range(epochs):
     print("Epoch %d, average loss: %f" % (e, total_loss/num_examples))
 ```
 
+```{.json .output n=10}
+[
+ {
+  "name": "stdout",
+  "output_type": "stream",
+  "text": "Epoch 0, average loss: 0.878892\nEpoch 1, average loss: 0.000050\nEpoch 2, average loss: 0.000050\nEpoch 3, average loss: 0.000050\nEpoch 4, average loss: 0.000050\n"
+ }
+]
+```
+
 比较学到的和真实模型。我们先从`net`拿到需要的层，然后访问其权重和位移。
 
-```{.python .input  n=12}
+```{.python .input  n=11}
 dense = net[0]
 true_w, dense.weight.data()
 ```
 
-```{.python .input  n=13}
+```{.json .output n=11}
+[
+ {
+  "data": {
+   "text/plain": "([2, -3.4], \n [[ 2.00083518 -3.40168881]]\n <NDArray 1x2 @cpu(0)>)"
+  },
+  "execution_count": 11,
+  "metadata": {},
+  "output_type": "execute_result"
+ }
+]
+```
+
+```{.python .input  n=12}
 true_b, dense.bias.data()
+```
+
+```{.json .output n=12}
+[
+ {
+  "data": {
+   "text/plain": "(4.2, \n [ 4.1997633]\n <NDArray 1 @cpu(0)>)"
+  },
+  "execution_count": 12,
+  "metadata": {},
+  "output_type": "execute_result"
+ }
+]
+```
+
+```{.python .input  n=19}
+dense.weight
+```
+
+```{.json .output n=19}
+[
+ {
+  "data": {
+   "text/plain": "Parameter dense0_weight (shape=(1, 2), dtype=<class 'numpy.float32'>)"
+  },
+  "execution_count": 19,
+  "metadata": {},
+  "output_type": "execute_result"
+ }
+]
+```
+
+```{.python .input  n=21}
+help dense?
+```
+
+```{.python .input}
+help dense
 ```
 
 ## 结论

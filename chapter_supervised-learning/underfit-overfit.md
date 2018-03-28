@@ -75,7 +75,7 @@ $$y = 1.2x - 3.4x^2 + 5.6x^3 + 5.0 + \text{noise}$$
 
 需要注意的是，我们用以上相同的数据生成函数来生成训练数据集和测试数据集。两个数据集的样本数都是100。
 
-```{.python .input}
+```{.python .input  n=1}
 from mxnet import ndarray as nd
 from mxnet import autograd
 from mxnet import gluon
@@ -84,6 +84,16 @@ num_train = 100
 num_test = 100
 true_w = [1.2, -3.4, 5.6]
 true_b = 5.0
+```
+
+```{.json .output n=1}
+[
+ {
+  "name": "stderr",
+  "output_type": "stream",
+  "text": "C:\\ProgramData\\Anaconda3\\lib\\site-packages\\h5py\\tests\\old\\test_attrs_data.py:251: DeprecationWarning: invalid escape sequence \\H\n  s = b\"Hello\\x00\\Hello\"\nC:\\ProgramData\\Anaconda3\\lib\\site-packages\\sklearn\\__init__.py:22: DeprecationWarning: invalid escape sequence \\.\n  module='^{0}\\.'.format(re.escape(__name__)))\nC:\\ProgramData\\Anaconda3\\lib\\site-packages\\scipy\\_lib\\_numpy_compat.py:287: DeprecationWarning: invalid escape sequence \\p\n  \"\"\"\nC:\\ProgramData\\Anaconda3\\lib\\site-packages\\sklearn\\externals\\joblib\\func_inspect.py:53: DeprecationWarning: invalid escape sequence \\<\n  '\\<doctest (.*\\.rst)\\[(.*)\\]\\>', source_file).groups()\nC:\\ProgramData\\Anaconda3\\lib\\site-packages\\sklearn\\externals\\joblib\\_memory_helpers.py:10: DeprecationWarning: invalid escape sequence \\s\n  cookie_re = re.compile(\"coding[:=]\\s*([-\\w.]+)\")\nC:\\ProgramData\\Anaconda3\\lib\\site-packages\\asn1crypto\\core.py:104: DeprecationWarning: invalid escape sequence \\d\n  _OID_RE = re.compile('^\\d+(\\.\\d+)*$')\n"
+ }
+]
 ```
 
 下面生成数据集。

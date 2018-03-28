@@ -6,7 +6,7 @@
 
 我们继续使用FashionMNIST数据集。
 
-```{.python .input  n=1}
+```{.python .input  n=2}
 import sys
 sys.path.append('..')
 import utils

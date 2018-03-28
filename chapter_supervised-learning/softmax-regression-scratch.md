@@ -15,7 +15,7 @@
 
 这里我们用了一个稍微复杂点的数据集，它跟MNIST非常像，但是内容不再是分类数字，而是服饰。我们通过gluon的data.vision模块自动下载这个数据。
 
-```{.python .input  n=1}
+```{.python .input  n=2}
 from mxnet import gluon
 from mxnet import ndarray as nd
 
@@ -25,11 +25,38 @@ mnist_train = gluon.data.vision.FashionMNIST(train=True, transform=transform)
 mnist_test = gluon.data.vision.FashionMNIST(train=False, transform=transform)
 ```
 
+```{.python .input  n=16}
+print(len(mnist_train[0][0]))
+```
+
+```{.json .output n=16}
+[
+ {
+  "name": "stdout",
+  "output_type": "stream",
+  "text": "28\n"
+ }
+]
+```
+
 打印一个样本的形状和它的标号
 
-```{.python .input  n=2}
+```{.python .input  n=6}
 data, label = mnist_train[0]
 ('example shape: ', data.shape, 'label:', label)
+```
+
+```{.json .output n=6}
+[
+ {
+  "data": {
+   "text/plain": "('example shape: ', (28, 28, 1), 'label:', 2.0)"
+  },
+  "execution_count": 6,
+  "metadata": {},
+  "output_type": "execute_result"
+ }
+]
 ```
 
 我们画出前几个样本的内容，和对应的文本标号
@@ -127,6 +154,11 @@ def net(X):
 
 具体来说，我们先将真实标号表示成一个概率分布，例如如果`y=1`，那么其对应的分布就是一个除了第二个元素为1其他全为0的长为10的向量，也就是 `yvec=[0, 1, 0, 0, 0, 0, 0, 0, 0, 0]`。那么交叉熵就是`yvec[0]*log(yhat[0])+...+yvec[n]*log(yhat[n])`。注意到`yvec`里面只有一个1，那么前面等价于`log(yhat[y])`。所以我们可以定义这个损失函数了
 
+> 1. 当使用Sigmoid作为激活函数时，可考虑使用CrossEntropy交叉熵损失函数作为损失函数，避免Sigmoid训练过程太慢
+> 2. CrossEntropy的本质是计算预测值y_hat与真实值y之间的概率分布的相似度:
+$$C = -\frac{1}{m} \sum_i^m{y\log(\hat{y}) + (1 - y)\log(1 - \hat{y})}$$
+即当$\hat{y}$与y的分布一致时,C值最小(如:y=0 and $\hat{y}$=0; 或 y=1 & \hat{y}=1)
+
 ```{.python .input  n=10}
 def cross_entropy(yhat, y):
     return - nd.pick(nd.log(yhat), y)
@@ -173,6 +205,7 @@ learning_rate = .1
 for epoch in range(5):
     train_loss = 0.
     train_acc = 0.
+    # 这里的data包含256张28*28的图片,每做完256张图片的计算,求一次acc
     for data, label in train_data:
         with autograd.record():
             output = net(data)
@@ -187,6 +220,16 @@ for epoch in range(5):
     test_acc = evaluate_accuracy(test_data, net)
     print("Epoch %d. Loss: %f, Train acc %f, Test acc %f" % (
         epoch, train_loss/len(train_data), train_acc/len(train_data), test_acc))
+```
+
+```{.json .output n=None}
+[
+ {
+  "name": "stdout",
+  "output_type": "stream",
+  "text": "Epoch 0. Loss: 0.981637, Train acc 0.767210, Test acc 0.767871\nEpoch 1. Loss: nan, Train acc 0.591151, Test acc 0.103516\nEpoch 2. Loss: nan, Train acc 0.100177, Test acc 0.103516\nEpoch 3. Loss: nan, Train acc 0.099873, Test acc 0.103516\n"
+ }
+]
 ```
 
 ## 预测
