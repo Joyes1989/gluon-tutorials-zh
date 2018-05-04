@@ -232,10 +232,10 @@ def k_fold_cross_valid(k, epochs, verbose_epoch, X_train, y_train, learning_rate
 训练模型并进行交叉验证，并不断调参优化模型效果
 
 ```{.python .input}
-k = 5
+k = 7
 epochs = 100
 verbose_epoch = 95
-learning_rate = 5
+learning_rate = 25
 weight_decay = 0.0
 ```
 
@@ -277,3 +277,179 @@ learn(epochs, verbose_epoch, X_train, y_train, test, learning_rate, weight_decay
 ```
 
 将上述步骤生成的submission.csv文件提交的kaggle网站即可
+
+### 不断优化调参，提交到Kaggle，争取更好的排名：
+（1） 可以在k折交叉验证中我们发现TestError高于trainError，因此可以增加weight_decay的值避免过拟合 (后来发现在Adam算法中不适用)
+
+（2） 考虑更换其他的梯度下降函数来代替上面的Adam函数（上述结果中，效果总是先好，随着迭代变差）
+
+### 如何挑选合适的激活函数以及梯度下降优化方法：
+[Ref-1] https://blog.csdn.net/u014381600/article/details/72867109
+
+[Ref-2] https://blog.csdn.net/u014595019/article/details/52562159
+
+（1） **激活函数的作用**：
+激活函数的主要作用是提供网络的非线性建模能力。如果没有激活函数，那么该网络仅能够表达线性映射，此时即便有再多的隐藏层，其整个网络跟单层神经网络也是等价的。因此也可以认为，只有加入了激活函数之后，深度神经网络才具备了分层的非线性映射学习能力。 那么激活函数应该具有什么样的性质呢？
+
+（2） **梯度下降优化方法**：使用何种优化方法来执行梯度下降过程：
+
+**1. SGD梯度下降法:**
+SGD全名 stochastic gradient descent， 即随机梯度下降。不过这里的SGD其实跟MBGD(minibatch gradient descent)是一个意思,即随机抽取一批样本,以此为根据来更新参数.
+
+**2. Adam优化方法:**
+Adam(Adaptive Moment Estimation)本质上是带有动量项的RMSprop，它利用梯度的一阶矩估计和二阶矩估计动态调整每个参数的学习率。Adam的优点主要在于经过偏置校正后，每一次迭代学习率都有个确定范围，使得参数比较平稳。
+
+**3. 优化方法效果对比**
+
+1：用相同数量的超参数来调参，SGD和SGD +momentum 方法性能在测试集上的额误差好于所有的自适应优化算法，尽管有时自适应优化算法在训练集上的loss更小，但是他们在测试集上的loss却依然比SGD方法高，
+
+2：自适应优化算法 在训练前期阶段在训练集上收敛的更快，但是在测试集上这种有点遇到了瓶颈。
+
+3：所有方法需要的迭代次数相同，这就和约定俗成的默认自适应优化算法 需要更少的迭代次数的结论相悖！
+
+
+### 下面实现基于SGD梯度下降函数的询量模型：
+
+#### 1/2: 搭建基于SGD优化方法的模型训练器 以及 搭建更复杂的网络结构
+
+```{.python .input}
+def get_net():
+    net = gluon.nn.Sequential()
+    with net.name_scope():
+        net.add(gluon.nn.Dense(256, activation="relu"))
+        # Dense 层就是全连接层
+        net.add(gluon.nn.Dense(1))
+    net.initialize()
+    return net
+```
+
+```{.python .input}
+%matplotlib inline 
+# 设置matplot的画图结果显示在本页面内，而不是显示在弹出窗口中
+
+import matplotlib as mpl
+mpl.rcParams['figure.dpi'] = 120
+import matplotlib.pyplot as plt
+
+def train_sgd(net, X_train, y_train, X_test, y_test, epochs, verbose_epoch, learning_rate, weight_decay, momentum):
+    train_loss = [] # 保存训练的每个阶段对应的Loss损失值函数值
+    if X_test is not None:
+        test_loss = []
+    batch_size = 100
+    dataset_train = gluon.data.ArrayDataset(X_train, y_train)
+    # 利用gluon中的数据加载器，每次从dataset_train中获取batch_size大小的数据用于训练
+    data_iter_train = gluon.data.DataLoader(dataset_train, batch_size, shuffle=True)
+    ## 构造训练器，adam 为激活函数的一种，从下面链接可查看gluon支持的所有激活函数
+    # https://mxnet.incubator.apache.org/api/python/optimization/optimization.html#the-mxnet-optimizer-package
+    trainer = gluon.Trainer(net.collect_params(), 
+                            'sgd', 
+                            {'learning_rate': learning_rate, 'wd': weight_decay, 'momentum': momentum})
+    # 重新初始化参数和梯度信息，避免多次调用train函数之间产生影响
+    # 具体参数用法： https://mxnet.incubator.apache.org/api/python/gluon/gluon.html?highlight=force_reinit
+    net.collect_params().initialize(force_reinit=True)
+    for epoch in range(epochs):
+        for data, label in data_iter_train:
+            with autograd.record():
+                output = net(data)
+                loss = square_loss(output, label)
+            loss.backward()
+            # 更新参数列表， 传入的batch_size会被用来进行归一化
+            # https://mxnet.incubator.apache.org/api/python/gluon/gluon.html?highlight=step#mxnet.gluon.Trainer.step
+            trainer.step(batch_size)
+            
+            cur_train_loss = get_rmse_log(net, X_train, y_train)
+        if epoch > verbose_epoch:
+#             print(type(epoch), type(cur_train_loss))
+            print("Epoch %d, train loss: %f" % (epoch, cur_train_loss))
+        train_loss.append(cur_train_loss)
+        if X_test is not None:
+            cur_test_loss = get_rmse_log(net, X_test, y_test)
+            test_loss.append(cur_test_loss)
+    plt.plot(train_loss)
+    plt.legend(['train'])
+    if X_test is not None:
+        plt.plot(test_loss)
+        plt.legend(['train', 'test'])
+    plt.show()
+    if X_test is not None:
+        return cur_train_loss, cur_test_loss
+    else:
+        return cur_train_loss
+    
+```
+
+#### 2/3: 基于SGD优化方法的模型训练器实现K折训练过程:
+
+```{.python .input}
+def k_fold_cross_valid_sgd(k, epochs, verbose_epoch, X_train, y_train, learning_rate, weight_decay, momentum):
+    # 断言
+    assert k > 1
+    # // 取整除操作符，返回商结果中的整数部分
+    fold_size = X_train.shape[0] // k  
+    train_loss_sum = 0.0
+    test_loss_sum = 0.0
+    # k 折数据是事先分好的，在整个训练过程中是不变的，改变的是每次选哪些用来训练和测试
+    for test_i in range(k):
+        # 获取本次用来测试的数据:（test_i * fold_size : (test_i + 1) * fold_size）之间的fold_size大小的数据
+        X_val_test = X_train[test_i * fold_size: (test_i + 1) * fold_size, :]
+        y_val_test = y_train[test_i * fold_size: (test_i + 1) * fold_size]
+        
+        val_train_defined = False
+        # 除去上面用来测试的数据后，其余的数据都是训练数据,拼接在一起
+        for i in range(k):
+            if i != test_i:
+                X_cur_fold = X_train[i * fold_size: (i + 1) * fold_size, :]
+                y_cur_fold = y_train[i * fold_size: (i + 1) * fold_size]
+                if not val_train_defined:
+                    X_val_train = X_cur_fold
+                    y_val_train = y_cur_fold
+                    val_train_defined = True
+                else:
+                    # 将剩余的询量数据拼接起来，构成总的训练集数据
+#                     print(X_val_train.shape, type(X_val_train), X_cur_fold.shape, type(X_cur_fold))
+#                     print(X_train.shape, type(X_train))
+                    X_val_train = nd.concat(X_val_train, X_cur_fold, dim=0)
+                    y_val_train = nd.concat(y_val_train, y_cur_fold, dim=0)
+        net = get_net()
+        train_loss, test_loss = train_sgd(net, X_val_train, y_val_train, X_val_test, y_val_test, 
+                                     epochs, verbose_epoch, learning_rate, weight_decay, momentum)
+        train_loss_sum += train_loss
+        print ("Test Loss: %f" % test_loss)
+        test_loss_sum += test_loss
+    return train_loss_sum / k, test_loss_sum / k
+
+```
+
+#### 3/4: 初始化网络的各类参数
+
+```{.python .input}
+k = 3
+epochs = 60
+verbose_epoch = 95
+learning_rate = 0.0000008
+weight_decay = 1000
+momentum = 0.1
+
+train_loss, test_loss = k_fold_cross_valid_sgd(k, epochs, verbose_epoch, 
+                                           X_train, y_train, learning_rate, weight_decay, momentum)
+print("%d-fold validation: Avg train loss: %f, Avg test loss: %f" %(k, train_loss, test_loss))
+```
+
+#### 4/5: 开始执行训练过程:
+
+```{.python .input}
+def learn_sgd(epochs, verbose_epoch, X_train, y_train, test, learning_rate, weight_decay, momentum):
+    net = get_net()
+    # 训练模型
+    train_sgd(net, X_train, y_train, None, None, epochs, verbose_epoch, learning_rate, weight_decay, momentum)
+    # 利用模型训练好的参数执行预测
+    preds = net(X_test).asnumpy()
+    # pd - pandas
+    test["SalePrice"] = pd.Series(preds.reshape(1, -1)[0])
+    
+    # 按格式生成结果文件，并保存
+    submission = pd.concat([test['Id'], test['SalePrice']], axis = 1)
+    submission.to_csv('submission.csv', index = False)
+
+learn_sgd(epochs, verbose_epoch, X_train, y_train, test, learning_rate, weight_decay, momentum)
+```

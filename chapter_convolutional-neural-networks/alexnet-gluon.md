@@ -47,7 +47,7 @@ GPU的到来改变了格局。很久以来，GPU都是为了图像处理和计�
 
 为了更好的理解，我们来看看现代的CPU。每个处理器核都十分强大，运作在高时钟频率，有先进复杂的结构和缓存。处理器可以很好地运行各种类型的代码，并由分支预测等机制使其能高效地运作在通用的常规程序上。然而，这个通用性同时也是一个弱点，因为通用的核心制造代价很高。它们会占用很多芯片面积，需要复杂的支持结构（内存接口，核间的缓存逻辑，高速互通连接等），并且跟不同任务的特制芯片相比它们在每个任务上表现并不完美。现代笔记本电脑可以有四核，而高端服务器也很少超过64核，就是因为这些核心并不划算。
 
-相比较，GPU通常有一百到一千个小处理单元组成（具体数值在NVIDIA，ATI/AMD，ARM和其他芯片厂商的产品间有所不同），这些单元通常被划分为稍大些的组（NVIDIA把这称作warps)。虽然它们每个处理单元相对较弱，运行在低于1GHz的时钟频率，庞大的数量使得GPU的运算速度比CPU快不止一个数量级。比如，NVIDIA最新一代的Volta运算速度在特别的指令上可以达到每个芯片120 TFlops，（更通用的指令上达到24 TFlops），而至今CPU的浮点数运算速度也未超过1 TFlop。这其中的原因很简单: 首先，能量消耗与时钟频率成二次关系，所以同样供一个运行速度是4x的CPU核心所需的能量可以用来运行16个GPU核心以其1/4的速度运行，并达到16 x 1/4 = 4x的性能。此外，GPU核心结构简单得多（事实上有很长一段时间他们甚至都还不能运行通用的代码），这使得他们能量效率很高。最后，很多深度学习中的操作需要很高的内存带宽，而GPU以其十倍于很多CPU的内存带宽而占尽优势。
+相比较，GPU通常有一百到一千个小处理单元组成（具体数值在NVIDIA，ATI/AMD，ARM和其他芯片厂商的产品间有所不同），这些单元通常被划分为稍大些的组（NVIDIA把这称作warps)。虽然它们每个处理单元相对较弱，运行在低于1GHz的时钟频率，庞大的数量使得GPU的运算速度比CPU快不止一个数量级。比如，NVIDIA最新一代的Volta运算速度在特别的指令上可以达到每个芯片120 TFlops，（更通用的指令上达到24 TFlops），而至今CPU的浮点数运算速度也未超过1 TFlop。这其中的原因很简单: 首先，**能量消耗与时钟频率成二次关系，所以同样供一个运行速度是4x的CPU核心所需的能量可以用来运行16个GPU核心以其1/4的速度运行，并达到16 x 1/4 = 4x的性能。**此外，GPU核心结构简单得多（事实上有很长一段时间他们甚至都还不能运行通用的代码），这使得他们能量效率很高。最后，很多深度学习中的操作需要很高的内存带宽，而GPU以其十倍于很多CPU的内存带宽而占尽优势。
 
 回到2012年，Alex Krizhevsky和Ilya
 Sutskever实现的可以运行在GPU上的深度卷积网络成为重大突破。他们意识到卷积网络的运算瓶颈（卷积和矩阵乘法）其实都可以在硬件上并行。使用两个NVIDIA GTX580和3GB内存，他们实现了快速的卷积。他们足够好的代码[cuda-convnet](https://code.google.com/archive/p/cuda-convnet/)使其成为那几年里的业界标准，驱动着深度学习繁荣的头几年。
@@ -66,45 +66,39 @@ Sutskever实现的可以运行在GPU上的深度卷积网络成为重大突破�
 
 下面的Gluon代码定义了（稍微简化过的）Alexnet：
 
-```{.python .input}
+```{.python .input  n=6}
 from mxnet.gluon import nn
 
 net = nn.Sequential()
 with net.name_scope():
-    net.add(
-        # 第一阶段
-        nn.Conv2D(channels=96, kernel_size=11,
-                  strides=4, activation='relu'),
-        nn.MaxPool2D(pool_size=3, strides=2),
+    # 第一阶段
+    net.add(nn.Conv2D(channels=96, kernel_size=11,strides=4, activation='relu'))
+    net.add(nn.MaxPool2D(pool_size=3, strides=2))
         # 第二阶段
-        nn.Conv2D(channels=256, kernel_size=5,
-                  padding=2, activation='relu'),
-        nn.MaxPool2D(pool_size=3, strides=2),
+    net.add(nn.Conv2D(channels=256, kernel_size=5,padding=2, activation='relu'))
+    net.add(nn.MaxPool2D(pool_size=3, strides=2))
         # 第三阶段
-        nn.Conv2D(channels=384, kernel_size=3,
-                  padding=1, activation='relu'),
-        nn.Conv2D(channels=384, kernel_size=3,
-                  padding=1, activation='relu'),
-        nn.Conv2D(channels=256, kernel_size=3,
-                  padding=1, activation='relu'),
-        nn.MaxPool2D(pool_size=3, strides=2),
+    net.add(nn.Conv2D(channels=384, kernel_size=3,padding=1, activation='relu'))
+    net.add(nn.Conv2D(channels=384, kernel_size=3,padding=1, activation='relu'))
+    net.add(nn.Conv2D(channels=256, kernel_size=3,padding=1, activation='relu'))
+    net.add(nn.MaxPool2D(pool_size=3, strides=2))
         # 第四阶段
-        nn.Flatten(),
-        nn.Dense(4096, activation="relu"),
-        nn.Dropout(.5),
+    net.add(nn.Flatten())
+    net.add(nn.Dense(4096, activation="relu"))
+    net.add(nn.Dropout(.5))
         # 第五阶段
-        nn.Dense(4096, activation="relu"),
-        nn.Dropout(.5),
+    net.add(nn.Dense(4096, activation="relu"))
+    net.add(nn.Dropout(.5))
         # 第六阶段
-        nn.Dense(10)
-    )
+    net.add(nn.Dense(10))
+            
 ```
 
 ## 读取数据
 
 Alexnet使用Imagenet数据，其中输入图片大小一般是$224 \times 224$。因为Imagenet数据训练时间过长，我们还是用前面的FashionMNIST来演示。读取数据的时候我们额外做了一步将数据扩大到原版Alexnet使用的$224 \times 224$。
 
-```{.python .input}
+```{.python .input  n=8}
 import sys
 sys.path.append('..')
 import utils
@@ -117,11 +111,12 @@ train_data, test_data = utils.load_data_fashion_mnist(
 
 这时候我们可以开始训练。相对于前面的LeNet，我们做了如下三个改动：
 
-1. 我们使用`Xavier`来初始化参数
+1. 我们使用`Xavier`来初始化参数：
+    **一种有效的初始化网络的方法，目的是使得信息更好的在各层网络中流动以使得各输出层的方差差异较小**
 2. 使用了更小的学习率
 3. 默认只迭代一轮（这样网页编译快一点）
 
-```{.python .input}
+```{.python .input  n=11}
 from mxnet import init
 from mxnet import gluon
 
@@ -133,6 +128,26 @@ trainer = gluon.Trainer(net.collect_params(),
                         'sgd', {'learning_rate': 0.01})
 utils.train(train_data, test_data, net, loss,
             trainer, ctx, num_epochs=1)
+```
+
+```{.json .output n=11}
+[
+ {
+  "name": "stdout",
+  "output_type": "stream",
+  "text": "Start training on  gpu(0)\n"
+ },
+ {
+  "name": "stderr",
+  "output_type": "stream",
+  "text": "C:\\ProgramData\\Anaconda3\\lib\\site-packages\\mxnet\\gluon\\parameter.py:281: UserWarning: Parameter sequential3_conv0_weight is already initialized, ignoring. Set force_reinit=True to re-initialize.\n  \"Set force_reinit=True to re-initialize.\"%self.name)\nC:\\ProgramData\\Anaconda3\\lib\\site-packages\\mxnet\\gluon\\parameter.py:281: UserWarning: Parameter sequential3_conv0_bias is already initialized, ignoring. Set force_reinit=True to re-initialize.\n  \"Set force_reinit=True to re-initialize.\"%self.name)\nC:\\ProgramData\\Anaconda3\\lib\\site-packages\\mxnet\\gluon\\parameter.py:281: UserWarning: Parameter sequential3_conv1_weight is already initialized, ignoring. Set force_reinit=True to re-initialize.\n  \"Set force_reinit=True to re-initialize.\"%self.name)\nC:\\ProgramData\\Anaconda3\\lib\\site-packages\\mxnet\\gluon\\parameter.py:281: UserWarning: Parameter sequential3_conv1_bias is already initialized, ignoring. Set force_reinit=True to re-initialize.\n  \"Set force_reinit=True to re-initialize.\"%self.name)\nC:\\ProgramData\\Anaconda3\\lib\\site-packages\\mxnet\\gluon\\parameter.py:281: UserWarning: Parameter sequential3_conv2_weight is already initialized, ignoring. Set force_reinit=True to re-initialize.\n  \"Set force_reinit=True to re-initialize.\"%self.name)\nC:\\ProgramData\\Anaconda3\\lib\\site-packages\\mxnet\\gluon\\parameter.py:281: UserWarning: Parameter sequential3_conv2_bias is already initialized, ignoring. Set force_reinit=True to re-initialize.\n  \"Set force_reinit=True to re-initialize.\"%self.name)\nC:\\ProgramData\\Anaconda3\\lib\\site-packages\\mxnet\\gluon\\parameter.py:281: UserWarning: Parameter sequential3_conv3_weight is already initialized, ignoring. Set force_reinit=True to re-initialize.\n  \"Set force_reinit=True to re-initialize.\"%self.name)\nC:\\ProgramData\\Anaconda3\\lib\\site-packages\\mxnet\\gluon\\parameter.py:281: UserWarning: Parameter sequential3_conv3_bias is already initialized, ignoring. Set force_reinit=True to re-initialize.\n  \"Set force_reinit=True to re-initialize.\"%self.name)\nC:\\ProgramData\\Anaconda3\\lib\\site-packages\\mxnet\\gluon\\parameter.py:281: UserWarning: Parameter sequential3_conv4_weight is already initialized, ignoring. Set force_reinit=True to re-initialize.\n  \"Set force_reinit=True to re-initialize.\"%self.name)\nC:\\ProgramData\\Anaconda3\\lib\\site-packages\\mxnet\\gluon\\parameter.py:281: UserWarning: Parameter sequential3_conv4_bias is already initialized, ignoring. Set force_reinit=True to re-initialize.\n  \"Set force_reinit=True to re-initialize.\"%self.name)\nC:\\ProgramData\\Anaconda3\\lib\\site-packages\\mxnet\\gluon\\parameter.py:281: UserWarning: Parameter sequential3_dense0_weight is already initialized, ignoring. Set force_reinit=True to re-initialize.\n  \"Set force_reinit=True to re-initialize.\"%self.name)\nC:\\ProgramData\\Anaconda3\\lib\\site-packages\\mxnet\\gluon\\parameter.py:281: UserWarning: Parameter sequential3_dense0_bias is already initialized, ignoring. Set force_reinit=True to re-initialize.\n  \"Set force_reinit=True to re-initialize.\"%self.name)\nC:\\ProgramData\\Anaconda3\\lib\\site-packages\\mxnet\\gluon\\parameter.py:281: UserWarning: Parameter sequential3_dense1_weight is already initialized, ignoring. Set force_reinit=True to re-initialize.\n  \"Set force_reinit=True to re-initialize.\"%self.name)\nC:\\ProgramData\\Anaconda3\\lib\\site-packages\\mxnet\\gluon\\parameter.py:281: UserWarning: Parameter sequential3_dense1_bias is already initialized, ignoring. Set force_reinit=True to re-initialize.\n  \"Set force_reinit=True to re-initialize.\"%self.name)\nC:\\ProgramData\\Anaconda3\\lib\\site-packages\\mxnet\\gluon\\parameter.py:281: UserWarning: Parameter sequential3_dense2_weight is already initialized, ignoring. Set force_reinit=True to re-initialize.\n  \"Set force_reinit=True to re-initialize.\"%self.name)\nC:\\ProgramData\\Anaconda3\\lib\\site-packages\\mxnet\\gluon\\parameter.py:281: UserWarning: Parameter sequential3_dense2_bias is already initialized, ignoring. Set force_reinit=True to re-initialize.\n  \"Set force_reinit=True to re-initialize.\"%self.name)\n"
+ },
+ {
+  "name": "stdout",
+  "output_type": "stream",
+  "text": "Epoch 0. Loss: 0.252, Train acc 0.91, Test acc 0.91, Time 235.4 sec\nEpoch 1. Loss: 0.244, Train acc 0.91, Test acc 0.91, Time 234.9 sec\nEpoch 2. Loss: 0.237, Train acc 0.91, Test acc 0.91, Time 58219.1 sec\nEpoch 3. Loss: 0.226, Train acc 0.92, Test acc 0.91, Time 235.7 sec\nEpoch 4. Loss: 0.220, Train acc 0.92, Test acc 0.92, Time 235.3 sec\nEpoch 5. Loss: 0.211, Train acc 0.92, Test acc 0.92, Time 235.0 sec\nEpoch 6. Loss: 0.205, Train acc 0.92, Test acc 0.93, Time 235.4 sec\nEpoch 7. Loss: 0.196, Train acc 0.93, Test acc 0.92, Time 234.9 sec\nEpoch 8. Loss: 0.190, Train acc 0.93, Test acc 0.92, Time 235.0 sec\nEpoch 9. Loss: 0.183, Train acc 0.93, Test acc 0.93, Time 235.0 sec\n"
+ }
+]
 ```
 
 ## 结论

@@ -55,6 +55,7 @@ def load_data_fashion_mnist(batch_size, resize=None, root="~/.mxnet/datasets/fas
                 new_data[i] = image.imresize(data[i], resize, resize)
             data = new_data
         # change data from batch x height x width x channel to batch x channel x height x width
+        # 下面transpose的第二个参数(0,3,1,2)的含义：从原来的维度下标顺序(0, 1, 2, 3) --> (0, 3, 1, 2)
         return nd.transpose(data.astype('float32'), (0,3,1,2))/255, label.astype('float32')
 
     mnist_train = gluon.data.vision.FashionMNIST(root=root, train=True, transform=None)

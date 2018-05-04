@@ -32,7 +32,7 @@ $$y_i \leftarrow \gamma \hat{x_i} + \beta \equiv \mbox{BN}_{\gamma,\beta}(x_i)$$
 我们现在来动手实现一个简化的批量归一化层。实现时对全连接层和二维卷积层两种情况做了区分。对于全连接层，很明显我们要对每个批量进行归一化。然而这里需要注意的是，对
 于二维卷积，我们要对每个通道进行归一化，并需要保持四维形状使得可以正确地广播。
 
-```{.python .input  n=1}
+```{.python .input  n=2}
 from mxnet import nd
 def pure_batch_norm(X, gamma, beta, eps=1e-5):
     assert len(X.shape) in (2, 4)
@@ -55,15 +55,41 @@ def pure_batch_norm(X, gamma, beta, eps=1e-5):
 
 下面我们检查一下。我们先定义全连接层的输入是这样的。每一行是批量中的一个实例。
 
-```{.python .input  n=2}
+```{.python .input  n=11}
 A = nd.arange(6).reshape((3,2))
-A
+print(A, A.shape)
+print(A.mean(axis = 0), A-A.mean(axis = 0), ((A-A.mean(axis=0))**2).mean(axis=0))
+
+
+```
+
+```{.json .output n=11}
+[
+ {
+  "name": "stdout",
+  "output_type": "stream",
+  "text": "\n[[ 0.  1.]\n [ 2.  3.]\n [ 4.  5.]]\n<NDArray 3x2 @cpu(0)> (3, 2)\n\n[ 2.  3.]\n<NDArray 2 @cpu(0)> \n[[-2. -2.]\n [ 0.  0.]\n [ 2.  2.]]\n<NDArray 3x2 @cpu(0)> \n[ 2.66666675  2.66666675]\n<NDArray 2 @cpu(0)>\n"
+ }
+]
 ```
 
 我们希望批量中的每一列都被归一化。结果符合预期。
 
-```{.python .input  n=3}
+```{.python .input  n=10}
 pure_batch_norm(A, gamma=nd.array([1,1]), beta=nd.array([0,0]))
+```
+
+```{.json .output n=10}
+[
+ {
+  "data": {
+   "text/plain": "\n[[-1.22474265 -1.22474265]\n [ 0.          0.        ]\n [ 1.22474265  1.22474265]]\n<NDArray 3x2 @cpu(0)>"
+  },
+  "execution_count": 10,
+  "metadata": {},
+  "output_type": "execute_result"
+ }
+]
 ```
 
 下面我们定义二维卷积网络层的输入是这样的。

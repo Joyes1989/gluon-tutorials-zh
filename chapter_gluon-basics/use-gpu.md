@@ -8,11 +8,11 @@
 
 首先需要确保至少有一块Nvidia显卡已经安装好了，然后下载安装显卡驱动和[CUDA](https://developer.nvidia.com/cuda-downloads)（推荐下载8.0，CUDA自带了驱动）。完成后应该可以通过`nvidia-smi`查看显卡信息了。（Windows用户需要设一下PATH：`set PATH=C:\Program Files\NVIDIA Corporation\NVSMI;%PATH%`）。
 
-```{.python .input  n=9}
+```{.python .input  n=1}
 !nvidia-smi
 ```
 
-```{.json .output n=9}
+```{.json .output n=1}
 [
  {
   "name": "stderr",
@@ -26,18 +26,28 @@
 
 使用pip来确认下：
 
-```{.python .input  n=8}
+```{.python .input  n=2}
 import pip
 for pkg in ['mxnet', 'mxnet-cu75', 'mxnet-cu80']:
     pip.main(['show', pkg])
 ```
 
-```{.json .output n=8}
+```{.json .output n=2}
 [
+ {
+  "name": "stderr",
+  "output_type": "stream",
+  "text": "You are using pip version 9.0.1, however version 9.0.3 is available.\nYou should consider upgrading via the 'python -m pip install --upgrade pip' command.\nYou are using pip version 9.0.1, however version 9.0.3 is available.\nYou should consider upgrading via the 'python -m pip install --upgrade pip' command.\n"
+ },
  {
   "name": "stdout",
   "output_type": "stream",
   "text": "Name: mxnet-cu80\nVersion: 0.11.1b20170923\nSummary: MXNet is an ultra-scalable deep learning framework. This version uses CUDA-8.0.\nHome-page: https://github.com/dmlc/mxnet\nAuthor: UNKNOWN\nAuthor-email: UNKNOWN\nLicense: Apache 2.0\nLocation: c:\\programdata\\anaconda3\\lib\\site-packages\nRequires: numpy\n"
+ },
+ {
+  "name": "stderr",
+  "output_type": "stream",
+  "text": "You are using pip version 9.0.1, however version 9.0.3 is available.\nYou should consider upgrading via the 'python -m pip install --upgrade pip' command.\n"
  }
 ]
 ```
@@ -210,7 +220,7 @@ from mxnet import gluon
 net = gluon.nn.Sequential()
 net.add(gluon.nn.Dense(1))
 
-net.initialize(ctx=mx.gpu())
+ 
 ```
 
 输入GPU上的数据，会在GPU上计算结果
