@@ -8,53 +8,112 @@
 
 首先需要确保至少有一块Nvidia显卡已经安装好了，然后下载安装显卡驱动和[CUDA](https://developer.nvidia.com/cuda-downloads)（推荐下载8.0，CUDA自带了驱动）。完成后应该可以通过`nvidia-smi`查看显卡信息了。（Windows用户需要设一下PATH：`set PATH=C:\Program Files\NVIDIA Corporation\NVSMI;%PATH%`）。
 
-```{.python .input  n=1}
+```{.python .input  n=3}
 !nvidia-smi
+```
+
+```{.json .output n=3}
+[
+ {
+  "name": "stdout",
+  "output_type": "stream",
+  "text": "Thu Nov 29 07:57:32 2018       \n+-----------------------------------------------------------------------------+\n| NVIDIA-SMI 369.30                 Driver Version: 369.30                    |\n|-------------------------------+----------------------+----------------------+\n| GPU  Name            TCC/WDDM | Bus-Id        Disp.A | Volatile Uncorr. ECC |\n| Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |\n|===============================+======================+======================|\n|   0  GeForce GTX 750 Ti WDDM  | 0000:01:00.0      On |                  N/A |\n| 33%   34C    P8     1W /  38W |    337MiB /  2048MiB |      0%      Default |\n+-------------------------------+----------------------+----------------------+\n                                                                               \n+-----------------------------------------------------------------------------+\n| Processes:                                                       GPU Memory |\n|  GPU       PID  Type  Process name                               Usage      |\n|=============================================================================|\n|  No running processes found                                                 |\n+-----------------------------------------------------------------------------+\n"
+ }
+]
 ```
 
 接下来要要确认正确安装了的`mxnet`的GPU版本。具体来说是卸载了`mxnet`（`pip uninstall mxnet`），然后根据CUDA版本安装`mxnet-cu75`或者`mxnet-cu80`（例如`pip install --pre mxnet-cu80`）。
 
 使用pip来确认下：
 
-```{.python .input  n=2}
+```{.python .input  n=4}
 import pip
 for pkg in ['mxnet', 'mxnet-cu75', 'mxnet-cu80']:
-    pip.main(['show', pkg])
+    pip._internal.main(['show', pkg])
+```
+
+```{.json .output n=4}
+[
+ {
+  "name": "stdout",
+  "output_type": "stream",
+  "text": "Name: mxnet-cu80\nVersion: 1.3.1b20180927\nSummary: MXNet is an ultra-scalable deep learning framework. This version uses CUDA-8.0.\nHome-page: https://github.com/apache/incubator-mxnet\nAuthor: UNKNOWN\nAuthor-email: UNKNOWN\nLicense: Apache 2.0\nLocation: c:\\users\\joyessh\\appdata\\local\\conda\\conda\\envs\\gluon\\lib\\site-packages\nRequires: requests, graphviz, numpy\nRequired-by: \n"
+ }
+]
 ```
 
 ## Context
 
 MXNet使用Context来指定使用哪个设备来存储和计算。默认会将数据开在主内存，然后利用CPU来计算，这个由`mx.cpu()`来表示。GPU则由`mx.gpu()`来表示。注意`mx.cpu()`表示所有的物理CPU和内存，意味着计算上会尽量使用多有的CPU核。但`mx.gpu()`只代表一块显卡和其对应的显卡内存。如果有多块GPU，我们用`mx.gpu(i)`来表示第*i*块GPU（*i*从0开始）。
 
-```{.python .input  n=3}
+```{.python .input  n=5}
 import mxnet as mx
 [mx.cpu(), mx.gpu(), mx.gpu(1)]
+```
+
+```{.json .output n=5}
+[
+ {
+  "data": {
+   "text/plain": "[cpu(0), gpu(0), gpu(1)]"
+  },
+  "execution_count": 5,
+  "metadata": {},
+  "output_type": "execute_result"
+ }
+]
 ```
 
 ## NDArray的GPU计算
 
 每个NDArray都有一个`context`属性来表示它存在哪个设备上，默认会是`cpu`。这是为什么前面每次我们打印NDArray的时候都会看到`@cpu(0)`这个标识。
 
-```{.python .input  n=4}
+```{.python .input  n=6}
 from mxnet import nd
 x = nd.array([1,2,3])
 x.context
+```
+
+```{.json .output n=6}
+[
+ {
+  "data": {
+   "text/plain": "cpu(0)"
+  },
+  "execution_count": 6,
+  "metadata": {},
+  "output_type": "execute_result"
+ }
+]
 ```
 
 ### GPU上创建内存
 
 我们可以在创建的时候指定创建在哪个设备上（如果GPU不能用或者没有装MXNet GPU版本，这里会有error）：
 
-```{.python .input  n=5}
+```{.python .input  n=7}
 a = nd.array([1,2,3], ctx=mx.gpu())
 b = nd.zeros((3,2), ctx=mx.gpu())
 c = nd.random.uniform(shape=(2,3), ctx=mx.gpu())
 (a,b,c)
 ```
 
+```{.json .output n=7}
+[
+ {
+  "data": {
+   "text/plain": "(\n [ 1.  2.  3.]\n <NDArray 3 @gpu(0)>, \n [[ 0.  0.]\n  [ 0.  0.]\n  [ 0.  0.]]\n <NDArray 3x2 @gpu(0)>, \n [[ 0.66865093  0.17409194  0.38500249]\n  [ 0.24678314  0.35134333  0.84042978]]\n <NDArray 2x3 @gpu(0)>)"
+  },
+  "execution_count": 7,
+  "metadata": {},
+  "output_type": "execute_result"
+ }
+]
+```
+
 尝试将内存开到另外一块GPU上。如果不存在会报错：
 
-```{.python .input}
+```{.python .input  n=9}
 import sys
 
 try:
@@ -63,72 +122,173 @@ except mx.MXNetError as err:
     sys.stderr.write(str(err))
 ```
 
+```{.json .output n=9}
+[
+ {
+  "name": "stderr",
+  "output_type": "stream",
+  "text": "[08:15:38] C:\\Jenkins\\workspace\\mxnet\\mxnet\\src\\storage\\storage.cc:65: Check failed: e == cudaSuccess || e == cudaErrorCudartUnloading CUDA: invalid device ordinal"
+ }
+]
+```
+
 我们可以通过`copyto`和`as_in_context`来在设备直接传输数据。
 
-```{.python .input}
+```{.python .input  n=10}
 y = x.copyto(mx.gpu())
 z = x.as_in_context(mx.gpu())
 (y, z)
 ```
 
+```{.json .output n=10}
+[
+ {
+  "data": {
+   "text/plain": "(\n [ 1.  2.  3.]\n <NDArray 3 @gpu(0)>, \n [ 1.  2.  3.]\n <NDArray 3 @gpu(0)>)"
+  },
+  "execution_count": 10,
+  "metadata": {},
+  "output_type": "execute_result"
+ }
+]
+```
+
 这两个函数的主要区别是，如果源和目标的context一致，`as_in_context`不复制，而`copyto`总是会新建内存：
 
-```{.python .input}
+```{.python .input  n=11}
 yy = y.as_in_context(mx.gpu())
 zz = z.copyto(mx.gpu())
 (yy is y, zz is z)
+```
+
+```{.json .output n=11}
+[
+ {
+  "data": {
+   "text/plain": "(True, False)"
+  },
+  "execution_count": 11,
+  "metadata": {},
+  "output_type": "execute_result"
+ }
+]
 ```
 
 ### GPU上的计算
 
 计算会在数据的`context`上执行。所以为了使用GPU，我们只需要事先将数据放在上面就行了。结果会自动保存在对应的设备上：
 
-```{.python .input}
+```{.python .input  n=12}
 nd.exp(z + 2) * y
+```
+
+```{.json .output n=12}
+[
+ {
+  "data": {
+   "text/plain": "\n[  20.08553696  109.19629669  445.23950195]\n<NDArray 3 @gpu(0)>"
+  },
+  "execution_count": 12,
+  "metadata": {},
+  "output_type": "execute_result"
+ }
+]
 ```
 
 注意所有计算要求输入数据在同一个设备上。不一致的时候系统不进行自动复制。这个设计的目的是因为设备之间的数据交互通常比较昂贵，我们希望用户确切的知道数据放在哪里，而不是隐藏这个细节。下面代码尝试将CPU上`x`和GPU上的`y`做运算。
 
-```{.python .input}
+```{.python .input  n=13}
 try:
+    print(x.context, y.context)
     x + y
 except mx.MXNetError as err:
     sys.stderr.write(str(err))
+```
+
+```{.json .output n=13}
+[
+ {
+  "name": "stdout",
+  "output_type": "stream",
+  "text": "cpu(0) gpu(0)\n"
+ },
+ {
+  "name": "stderr",
+  "output_type": "stream",
+  "text": "[08:16:34] c:\\jenkins\\workspace\\mxnet\\mxnet\\src\\imperative\\./imperative_utils.h:70: Check failed: inputs[i]->ctx().dev_mask() == ctx.dev_mask() (2 vs. 1) Operator broadcast_add require all inputs live on the same context. But the first argument is on cpu(0) while the 2-th argument is on gpu(0)"
+ }
+]
 ```
 
 ### 默认会复制回CPU的操作
 
 如果某个操作需要将NDArray里面的内容转出来，例如打印或变成numpy格式，如果需要的话系统都会自动将数据copy到主内存。
 
-```{.python .input}
+```{.python .input  n=19}
 print(y)
-print(y.asnumpy())
+print(y.asnumpy()) # 这个操作必然会触发数据copy到cpu，因为numpy不支持gpu
 print(y.sum().asscalar())
+```
+
+```{.json .output n=19}
+[
+ {
+  "name": "stdout",
+  "output_type": "stream",
+  "text": "\n[ 1.  2.  3.]\n<NDArray 3 @gpu(0)>\n[ 1.  2.  3.]\n6.0\n"
+ }
+]
 ```
 
 ## Gluon的GPU计算
 
 同NDArray类似，Gluon的大部分函数可以通过`ctx`指定设备。下面代码将模型参数初始化在GPU上：
 
-```{.python .input}
+```{.python .input  n=21}
 from mxnet import gluon
 net = gluon.nn.Sequential()
 net.add(gluon.nn.Dense(1))
 
-net.initialize(ctx=mx.gpu())
+net.initialize(ctx=mx.gpu()) #initialize阶段制定网络在gpu中
 ```
 
 输入GPU上的数据，会在GPU上计算结果
 
-```{.python .input}
+```{.python .input  n=22}
 data = nd.random.uniform(shape=[3,2], ctx=mx.gpu())
 net(data)
 ```
 
+```{.json .output n=22}
+[
+ {
+  "data": {
+   "text/plain": "\n[[ 0.00271713]\n [ 0.01119637]\n [ 0.0097794 ]]\n<NDArray 3x1 @gpu(0)>"
+  },
+  "execution_count": 22,
+  "metadata": {},
+  "output_type": "execute_result"
+ }
+]
+```
+
 确认下权重：
 
-```{.python .input}
+```{.python .input  n=23}
 net[0].weight.data()
+```
+
+```{.json .output n=23}
+[
+ {
+  "data": {
+   "text/plain": "\n[[ 0.0068339   0.01299825]]\n<NDArray 1x2 @gpu(0)>"
+  },
+  "execution_count": 23,
+  "metadata": {},
+  "output_type": "execute_result"
+ }
+]
 ```
 
 ## 总结

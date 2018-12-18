@@ -12,8 +12,8 @@
 from mxnet.gluon import nn
 
 net = nn.Sequential()
-drop_prob1 = 0.2
-drop_prob2 = 0.5
+drop_prob1 = 0.5
+drop_prob2 = 0.2
 
 with net.name_scope():
     net.add(nn.Flatten())
@@ -48,7 +48,7 @@ softmax_cross_entropy = gluon.loss.SoftmaxCrossEntropyLoss()
 trainer = gluon.Trainer(net.collect_params(), 
                         'sgd', {'learning_rate': 0.5})
 
-for epoch in range(5):
+for epoch in range(10):
     train_loss = 0.
     train_acc = 0.
     for data, label in train_data:

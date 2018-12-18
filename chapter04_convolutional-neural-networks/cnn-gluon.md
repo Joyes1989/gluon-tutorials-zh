@@ -6,7 +6,7 @@
 
 下面是LeNet在Gluon里的实现，注意到我们不再需要实现去计算每层的输入大小，尤其是接在卷积后面的那个全连接层。
 
-```{.python .input}
+```{.python .input  n=2}
 from mxnet.gluon import nn
 
 net = nn.Sequential()
@@ -22,7 +22,7 @@ with net.name_scope():
 
 然后我们尝试将模型权重初始化在GPU上
 
-```{.python .input}
+```{.python .input  n=3}
 import sys
 sys.path.append('..')
 import utils
@@ -33,11 +33,21 @@ net.initialize(ctx=ctx)
 print('initialize weight on', ctx)
 ```
 
+```{.json .output n=3}
+[
+ {
+  "name": "stdout",
+  "output_type": "stream",
+  "text": "initialize weight on gpu(0)\n"
+ }
+]
+```
+
 ## 获取数据然后训练
 
 跟之前没什么两样。
 
-```{.python .input}
+```{.python .input  n=4}
 from mxnet import autograd 
 from mxnet import gluon
 from mxnet import nd
@@ -66,6 +76,16 @@ for epoch in range(5):
     print("Epoch %d. Loss: %f, Train acc %f, Test acc %f" % (
         epoch, train_loss/len(train_data), 
         train_acc/len(train_data), test_acc))
+```
+
+```{.json .output n=4}
+[
+ {
+  "name": "stdout",
+  "output_type": "stream",
+  "text": "Epoch 0. Loss: 1.316407, Train acc 0.524306, Test acc 0.779347\nEpoch 1. Loss: 0.516135, Train acc 0.803803, Test acc 0.843249\nEpoch 2. Loss: 0.418027, Train acc 0.843817, Test acc 0.858974\nEpoch 3. Loss: 0.369826, Train acc 0.861979, Test acc 0.871194\nEpoch 4. Loss: 0.342376, Train acc 0.872029, Test acc 0.871795\n"
+ }
+]
 ```
 
 ## 结论

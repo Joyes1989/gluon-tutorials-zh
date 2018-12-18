@@ -97,19 +97,6 @@ y += .1 * nd.random.normal(shape=y.shape)
 ('x:', x[:5], 'X:', X[:5], 'y:', y[:5])
 ```
 
-```{.json .output n=3}
-[
- {
-  "data": {
-   "text/plain": "('x:', \n [[ 1.16307855]\n  [ 2.21220613]\n  [ 0.48380461]\n  [ 0.7740038 ]\n  [ 0.29956347]]\n <NDArray 5x1 @cpu(0)>, 'X:', \n [[  1.16307855   1.35275173   1.57335651]\n  [  2.21220613   4.89385605  10.82621765]\n  [  0.48380461   0.2340669    0.11324265]\n  [  0.7740038    0.59908187   0.46369165]\n  [  0.29956347   0.08973827   0.02688231]]\n <NDArray 5x3 @cpu(0)>, 'y:', \n [ 10.56862545  51.63996506   5.32011604   6.59616661   5.30076599]\n <NDArray 5 @cpu(0)>)"
-  },
-  "execution_count": 3,
-  "metadata": {},
-  "output_type": "execute_result"
- }
-]
-```
-
 ### 定义训练和测试步骤
 
 我们定义一个训练和测试的函数，这样在跑不同的实验时不需要重复实现相同的步骤。
@@ -171,7 +158,7 @@ def train(X_train, X_test, y_train, y_test):
 我们先使用与数据生成函数同阶的三阶多项式拟合。实验表明这个模型的训练误差和在测试数据集的误差都较低。训练出的模型参数也接近真实值。
 
 ```{.python .input}
-train(X[:num_train, :], X[num_train:, :], y[:num_train], y[num_train:])
+train(X[:num_train, :], X[num_train:, :], y[:num_train], y[num_train:]) #训练样本数据为X，包含一次方、平方和立方的特征
 ```
 
 ### 线性拟合（欠拟合）
@@ -179,7 +166,7 @@ train(X[:num_train, :], X[num_train:, :], y[:num_train], y[num_train:])
 我们再试试线性拟合。很明显，该模型的训练误差很高。线性模型在非线性模型（例如三阶多项式）生成的数据集上容易欠拟合。
 
 ```{.python .input}
-train(x[:num_train, :], x[num_train:, :], y[:num_train], y[num_train:])
+train(x[:num_train, :], x[num_train:, :], y[:num_train], y[num_train:]) #训练样本数据为x，仅有一维特征，没有平方和立方的特征
 ```
 
 ### 训练量不足（过拟合）

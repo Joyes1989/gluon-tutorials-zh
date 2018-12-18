@@ -39,7 +39,7 @@ import matplotlib.pyplot as plt
 
 def show_images(images):
     n = images.shape[0]
-    _, figs = plt.subplots(1, n, figsize=(15, 15))
+    _, figs = plt.subplots(1, n, figsize=(20, 20))
     for i in range(n):
         figs[i].imshow(images[i].reshape((28, 28)).asnumpy())
         figs[i].axes.get_xaxis().set_visible(False)
@@ -55,6 +55,7 @@ def get_text_labels(label):
 
 data, label = mnist_train[0:9]
 show_images(data)
+#print(data)
 print(get_text_labels(label))
 ```
 
@@ -128,6 +129,10 @@ def net(X):
 具体来说，我们先将真实标号表示成一个概率分布，例如如果`y=1`，那么其对应的分布就是一个除了第二个元素为1其他全为0的长为10的向量，也就是 `yvec=[0, 1, 0, 0, 0, 0, 0, 0, 0, 0]`。那么交叉熵就是`yvec[0]*log(yhat[0])+...+yvec[n]*log(yhat[n])`。注意到`yvec`里面只有一个1，那么前面等价于`log(yhat[y])`。所以我们可以定义这个损失函数了
 
 ```{.python .input  n=10}
+# Signature: nd.pick(data=None, index=None, axis=_Null, keepdims=_Null, mode=_Null, out=None, name=None, **kwargs)
+# Docstring:
+# Picks elements from an input array according to the input indices along the given axis.
+# pick函数第一参数为data，为待选取数据源；第二个参数为索引；根据第二个函数中的索引从第一个参数data中选取数据
 def cross_entropy(yhat, y):
     return - nd.pick(nd.log(yhat), y)
 ```
@@ -168,7 +173,7 @@ sys.path.append('..')
 from utils import SGD
 from mxnet import autograd
 
-learning_rate = .1
+learning_rate = .3
 
 for epoch in range(5):
     train_loss = 0.
@@ -177,6 +182,7 @@ for epoch in range(5):
         with autograd.record():
             output = net(data)
             loss = cross_entropy(output, label)
+        # 进行反向传播更新参数
         loss.backward()
         # 将梯度做平均，这样学习率会对batch size不那么敏感
         SGD(params, learning_rate/batch_size)
@@ -202,6 +208,10 @@ print(get_text_labels(label))
 predicted_labels = net(data).argmax(axis=1)
 print('predicted labels')
 print(get_text_labels(predicted_labels.asnumpy()))
+```
+
+```{.python .input}
+nd.pick?
 ```
 
 ## 结论

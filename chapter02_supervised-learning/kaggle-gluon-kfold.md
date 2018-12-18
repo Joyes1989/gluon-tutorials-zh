@@ -276,8 +276,7 @@ def learn(epochs, verbose_epoch, X_train, y_train, test, learning_rate,
 调好参数以后，下面我们预测并在Kaggle提交预测结果。
 
 ```{.python .input}
-learn(epochs, verbose_epoch, X_train, y_train, test, learning_rate,
-      weight_decay)
+learn(epochs, verbose_epoch, X_train, y_train, test, learning_rate, weight_decay)
 ```
 
 执行完上述代码后，会生成一个`submission.csv`文件。这是Kaggle要求的提交格式。这时我们可以在Kaggle上把我们预测得出的结果提交并查看与测试数据集上真实房价的误差。你需要登录Kaggle网站，打开[房价预测问题地址](https://www.kaggle.com/c/house-prices-advanced-regression-techniques)，并点击下方右侧`Submit Predictions`按钮提交。

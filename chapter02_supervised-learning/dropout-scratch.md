@@ -35,7 +35,7 @@ def dropout(X, drop_probability):
         0, 1.0, X.shape, ctx=X.context) < keep_probability
     # 保证 E[dropout(X)] == X
     scale =  1 / keep_probability 
-    return mask * X * scale
+    return mask * X * scale # 这里是点乘，矩阵对应元素相乘，要求两个矩阵大小一致
 ```
 
 我们运行几个实例来验证一下。
@@ -45,51 +45,12 @@ A = nd.arange(20).reshape((5,4))
 dropout(A, 0.0)
 ```
 
-```{.json .output n=13}
-[
- {
-  "data": {
-   "text/plain": "\n[[  0.   1.   2.   3.]\n [  4.   5.   6.   7.]\n [  8.   9.  10.  11.]\n [ 12.  13.  14.  15.]\n [ 16.  17.  18.  19.]]\n<NDArray 5x4 @cpu(0)>"
-  },
-  "execution_count": 13,
-  "metadata": {},
-  "output_type": "execute_result"
- }
-]
-```
-
 ```{.python .input  n=14}
 dropout(A, 0.5)
 ```
 
-```{.json .output n=14}
-[
- {
-  "data": {
-   "text/plain": "\n[[  0.   2.   4.   6.]\n [  0.  10.  12.  14.]\n [ 16.   0.   0.  22.]\n [  0.  26.   0.  30.]\n [ 32.  34.   0.   0.]]\n<NDArray 5x4 @cpu(0)>"
-  },
-  "execution_count": 14,
-  "metadata": {},
-  "output_type": "execute_result"
- }
-]
-```
-
 ```{.python .input  n=15}
 dropout(A, 1.0)
-```
-
-```{.json .output n=15}
-[
- {
-  "data": {
-   "text/plain": "\n[[ 0.  0.  0.  0.]\n [ 0.  0.  0.  0.]\n [ 0.  0.  0.  0.]\n [ 0.  0.  0.  0.]\n [ 0.  0.  0.  0.]]\n<NDArray 5x4 @cpu(0)>"
-  },
-  "execution_count": 15,
-  "metadata": {},
-  "output_type": "execute_result"
- }
-]
 ```
 
 ## 丢弃法的本质
@@ -122,16 +83,6 @@ sys.path.append('..')
 import utils
 batch_size = 256
 train_data, test_data = utils.load_data_fashion_mnist(batch_size)
-```
-
-```{.json .output n=16}
-[
- {
-  "name": "stdout",
-  "output_type": "stream",
-  "text": "Downloading C:\\Users\\JoyesSH/.mxnet/datasets/fashion-mnist\\train-images-idx3-ubyte.gz from https://apache-mxnet.s3-accelerate.dualstack.amazonaws.com/gluon/dataset/fashion-mnist/train-images-idx3-ubyte.gz...\nDownloading C:\\Users\\JoyesSH/.mxnet/datasets/fashion-mnist\\train-labels-idx1-ubyte.gz from https://apache-mxnet.s3-accelerate.dualstack.amazonaws.com/gluon/dataset/fashion-mnist/train-labels-idx1-ubyte.gz...\nDownloading C:\\Users\\JoyesSH/.mxnet/datasets/fashion-mnist\\t10k-images-idx3-ubyte.gz from https://apache-mxnet.s3-accelerate.dualstack.amazonaws.com/gluon/dataset/fashion-mnist/t10k-images-idx3-ubyte.gz...\nDownloading C:\\Users\\JoyesSH/.mxnet/datasets/fashion-mnist\\t10k-labels-idx1-ubyte.gz from https://apache-mxnet.s3-accelerate.dualstack.amazonaws.com/gluon/dataset/fashion-mnist/t10k-labels-idx1-ubyte.gz...\n"
- }
-]
 ```
 
 ## 含两个隐藏层的多层感知机
@@ -174,12 +125,14 @@ for param in params:
 **通常dropout的过程发生在全连接的后面**
 
 （joy） 当系统中没有全连接（只有卷积层时）dropout的用处不是很大：
-      
+
+
       （1）因为卷积的模型参数较少，不容易发生过拟合的现象
 
+
 ```{.python .input  n=18}
-drop_prob1 = 0.2
-drop_prob2 = 0.5
+drop_prob1 = 0.5
+drop_prob2 = 0.1
 
 def net(X):
     X = X.reshape((-1, num_inputs))
@@ -225,16 +178,6 @@ for epoch in range(5):
         train_acc/len(train_data), test_acc))
 ```
 
-```{.json .output n=19}
-[
- {
-  "name": "stdout",
-  "output_type": "stream",
-  "text": "Epoch 0. Loss: 1.252650, Train acc 0.525205, Test acc 0.760059\nEpoch 1. Loss: 0.616479, Train acc 0.770312, Test acc 0.817969\nEpoch 2. Loss: 0.506513, Train acc 0.815536, Test acc 0.838379\nEpoch 3. Loss: 0.459570, Train acc 0.832319, Test acc 0.845605\nEpoch 4. Loss: 0.430740, Train acc 0.843340, Test acc 0.855859\n"
- }
-]
-```
-
 ## 总结
 
 我们可以通过使用丢弃法对神经网络正则化。
@@ -242,6 +185,6 @@ for epoch in range(5):
 ## 练习
 
 - 尝试不使用丢弃法，看看这个包含两个隐含层的多层感知机可以得到什么结果。
-- 我们推荐把更靠近输入层的元素丢弃概率设的更小一点。想想这是为什么？如果把本节教程中的两个元素丢弃参数对调会有什么结果？
+- **我们推荐把更靠近输入层的元素丢弃概率设的更小一点**。想想这是为什么？如果把本节教程中的两个元素丢弃参数对调会有什么结果？
 
 **吐槽和讨论欢迎点**[这里](https://discuss.gluon.ai/t/topic/1278)

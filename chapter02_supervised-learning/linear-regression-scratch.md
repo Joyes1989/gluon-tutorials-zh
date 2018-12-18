@@ -31,28 +31,27 @@ from mxnet import autograd
 num_inputs = 2
 num_examples = 1000
 
+# 权重向量 w，大小和X列数对齐
 true_w = [2, -3.4]
+# 偏移量 b
 true_b = 4.2
 
 X = nd.random_normal(shape=(num_examples, num_inputs))
 y = true_w[0] * X[:, 0] + true_w[1] * X[:, 1] + true_b
+
+# 添加一个噪音
 y += .01 * nd.random_normal(shape=y.shape)
 ```
 
 注意到`X`的每一行是一个长度为2的向量，而`y`的每一行是一个长度为1的向量（标量）。
 
+
+    --- w和b是参数，其维度数和X的大小对齐
+
+
 ```{.python .input  n=2}
 print(X[0], y[0])
-```
-
-```{.json .output n=2}
-[
- {
-  "name": "stdout",
-  "output_type": "stream",
-  "text": "\n[ 1.16307855  2.21220613]\n<NDArray 2 @cpu(0)> \n[-1.0015316]\n<NDArray 1 @cpu(0)>\n"
- }
-]
+print(X.shape)
 ```
 
 ## 数据读取
@@ -63,7 +62,7 @@ print(X[0], y[0])
 import random
 batch_size = 10
 def data_iter():
-    # 产生一个随机索引
+    # 产生一个随机索引,将batch_size个样本打乱
     idx = list(range(num_examples))
     random.shuffle(idx)
     for i in range(0, num_examples, batch_size):
@@ -79,21 +78,12 @@ for data, label in data_iter():
     break
 ```
 
-```{.json .output n=4}
-[
- {
-  "name": "stdout",
-  "output_type": "stream",
-  "text": "\n[[-0.60153437  1.18371439]\n [ 1.68393028  0.77373821]\n [ 0.27119216  0.67585617]\n [-0.70443887  0.11922956]\n [ 0.27752855  0.68164563]\n [ 0.11222199 -0.09502531]\n [-0.19508816  0.6325348 ]\n [-1.27279079  1.47948802]\n [-0.98571479  0.56402695]\n [-0.46957269  1.73034632]]\n<NDArray 10x2 @cpu(0)> \n[-1.02981758  4.93909216  2.4455936   2.38639784  2.4427011   4.74484682\n  1.66952765 -3.38364601  0.31658202 -2.62291455]\n<NDArray 10 @cpu(0)>\n"
- }
-]
-```
-
 ## 初始化模型参数
 
 下面我们随机初始化模型参数
 
 ```{.python .input  n=5}
+# 权重向量w和偏移量b维度数是一致的
 w = nd.random_normal(shape=(num_inputs, 1))
 b = nd.zeros((1,))
 params = [w, b]
@@ -102,6 +92,7 @@ params = [w, b]
 之后训练时我们需要对这些参数求导来更新它们的值，所以我们需要创建它们的梯度。
 
 ```{.python .input  n=6}
+# 求导的对象是参数，我们的参数是这里的w和b，而非x
 for param in params:
     param.attach_grad()
 ```
@@ -114,6 +105,9 @@ for param in params:
 # 用于进行预测的模型
 def net(X):
     return nd.dot(X, w) + b
+
+# print(data)
+# net(data)
 ```
 
 ## 损失函数
@@ -128,9 +122,10 @@ def square_loss(yhat, y):
 
 ## 优化
 
-虽然线性回归有显试解，但绝大部分模型并没有。所以我们这里通过随机梯度下降来求解。每一步，我们将模型参数沿着梯度的反方向走特定距离，这个距离一般叫学习率。（我们会之后一直使用这个函数，我们将其保存在[utils.py](../utils.py)。）
+虽然线性回归有显试解，但绝大部分模型并没有。所以我们这里通过随机梯度下降来求解。**每一步，我们将模型参数沿着梯度的反方向走特定距离，这个距离一般叫学习率**。（我们会之后一直使用这个函数，我们将其保存在[utils.py](../utils.py)。）
 
 ```{.python .input  n=9}
+# params 使我们要优化和求解的变量，所以需要获得param的导数 param.grad
 def SGD(params, lr):
     for param in params:
         param[:] = param - lr * param.grad
@@ -163,50 +158,14 @@ for e in range(epochs):
     print("Epoch %d, average loss: %f" % (e, total_loss/num_examples))
 ```
 
-```{.json .output n=10}
-[
- {
-  "name": "stdout",
-  "output_type": "stream",
-  "text": "Epoch 0, average loss: 9.434924\nEpoch 1, average loss: 0.211757\nEpoch 2, average loss: 0.004862\nEpoch 3, average loss: 0.000208\nEpoch 4, average loss: 0.000105\n"
- }
-]
-```
-
 训练完成后我们可以比较学到的参数和真实参数
 
 ```{.python .input  n=11}
 true_w, w
 ```
 
-```{.json .output n=11}
-[
- {
-  "data": {
-   "text/plain": "([2, -3.4], \n [[ 1.9994446 ]\n  [-3.39988399]]\n <NDArray 2x1 @cpu(0)>)"
-  },
-  "execution_count": 11,
-  "metadata": {},
-  "output_type": "execute_result"
- }
-]
-```
-
 ```{.python .input  n=12}
 true_b, b
-```
-
-```{.json .output n=12}
-[
- {
-  "data": {
-   "text/plain": "(4.2, \n [ 4.19944382]\n <NDArray 1 @cpu(0)>)"
-  },
-  "execution_count": 12,
-  "metadata": {},
-  "output_type": "execute_result"
- }
-]
 ```
 
 ## 结论

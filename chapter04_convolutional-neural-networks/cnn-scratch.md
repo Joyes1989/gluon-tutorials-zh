@@ -22,6 +22,8 @@
 我们使用`nd.Convlution`来演示这个。
 
 ```{.python .input  n=47}
+# 下面的例子和上面的图不是对应的 ！！！！
+
 from mxnet import nd
 
 # 输入输出数据格式是 batch x channel x height x width，这里batch和channel都是1
@@ -34,7 +36,7 @@ out = nd.Convolution(data, w, b, kernel=w.shape[2:], num_filter=w.shape[1])
 print('input:', data, '\n\nweight:', w, '\n\nbias:', b, '\n\noutput:', out)
 ```
 
-我们可以控制如何移动窗口，和在边缘的时候如何填充窗口。下图演示了`stride=1`和`pad=1`。
+我们可以控制如何移动窗口，和在边缘的时候如何填充窗口。下图演示了`stride=2`和`pad=1`。
 
 ![](https://raw.githubusercontent.com/vdumoulin/conv_arithmetic/master/gif/padding_strides.gif)
 
@@ -122,7 +124,7 @@ ctx
 weight_scale = .01
 
 # output channels = 20, kernel = (5,5)
-W1 = nd.random_normal(shape=(20,1,5,5), scale=weight_scale, ctx=ctx)
+W1 = nd.random_normal(shape=(20,1,5,5), scale=weight_scale, ctx=ctx) # 使用20个filter来做卷积
 b1 = nd.zeros(W1.shape[0], ctx=ctx)
 
 # output channels = 50, kernel = (3,3)

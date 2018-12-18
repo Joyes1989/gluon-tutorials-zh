@@ -2,7 +2,7 @@
 
 我们仍然用MLP这个例子来详细解释如何初始化模型参数。
 
-```{.python .input  n=41}
+```{.python .input  n=10}
 from mxnet.gluon import nn
 from mxnet import nd
 
@@ -19,7 +19,7 @@ x = nd.random.uniform(shape=(3,5))
 
 我们知道如果不`initialize()`直接跑forward，那么系统会抱怨说参数没有初始化。
 
-```{.python .input  n=42}
+```{.python .input  n=9}
 import sys
 try:
     net = get_net()
@@ -30,41 +30,41 @@ except RuntimeError as err:
     sys.stderr.write(str(err))
 ```
 
-```{.json .output n=42}
+```{.json .output n=9}
 [
  {
   "name": "stdout",
   "output_type": "stream",
-  "text": "Sequential(\n  (0): Dense(4, Activation(relu))\n  (1): Dense(2, linear)\n)\n"
+  "text": "Sequential(\n  (0): Dense(None -> 4, Activation(relu))\n  (1): Dense(None -> 2, linear)\n)\n"
  },
  {
   "name": "stderr",
   "output_type": "stream",
-  "text": "Parameter sequential8_dense0_weight has not been initialized. Note that you should initialize parameters and create Trainer with Block.collect_params() instead of Block.params because the later does not include Parameters of nested child Blocks"
+  "text": "Parameter 'sequential2_dense0_weight' has not been initialized. Note that you should initialize parameters and create Trainer with Block.collect_params() instead of Block.params because the later does not include Parameters of nested child Blocks"
  }
 ]
 ```
 
 正确的打开方式是这样
 
-```{.python .input  n=43}
+```{.python .input  n=11}
 net.initialize()
 print(net)
 net(x)
 ```
 
-```{.json .output n=43}
+```{.json .output n=11}
 [
  {
   "name": "stdout",
   "output_type": "stream",
-  "text": "Sequential(\n  (0): Dense(4, Activation(relu))\n  (1): Dense(2, linear)\n)\n"
+  "text": "Sequential(\n  (0): Dense(None -> 4, Activation(relu))\n  (1): Dense(None -> 2, linear)\n)\n"
  },
  {
   "data": {
-   "text/plain": "\n[[-0.00289688  0.00205199]\n [ 0.0010183  -0.0016662 ]\n [-0.00048244  0.00038137]]\n<NDArray 3x2 @cpu(0)>"
+   "text/plain": "\n[[ 0.00546073  0.00333483]\n [ 0.00617615  0.00437204]\n [ 0.00130519  0.00104359]]\n<NDArray 3x2 @cpu(0)>"
   },
-  "execution_count": 43,
+  "execution_count": 11,
   "metadata": {},
   "output_type": "execute_result"
  }
@@ -81,37 +81,37 @@ net(x)
     2. 通过weight.data()、bias.data()来获取具体参数值
     3. 通过weight.grad()、bias.grad()来获取参数对应的梯度
 
-```{.python .input  n=44}
+```{.python .input  n=12}
 w = net[0].weight
 b = net[0].bias
 print('name: ', net[0].name, '\nweight: ', w, '\nbias: ', b)
 ```
 
-```{.json .output n=44}
+```{.json .output n=12}
 [
  {
   "name": "stdout",
   "output_type": "stream",
-  "text": "name:  sequential8_dense0 \nweight:  Parameter sequential8_dense0_weight (shape=(4, 5), dtype=<class 'numpy.float32'>) \nbias:  Parameter sequential8_dense0_bias (shape=(4,), dtype=<class 'numpy.float32'>)\n"
+  "text": "name:  sequential2_dense0 \nweight:  Parameter sequential2_dense0_weight (shape=(4, 5), dtype=float32) \nbias:  Parameter sequential2_dense0_bias (shape=(4,), dtype=float32)\n"
  }
 ]
 ```
 
 然后我们可以通过`data`来访问参数，`grad`来访问对应的梯度
 
-```{.python .input  n=45}
+```{.python .input  n=13}
 print('weight:', w.data())
 print('weight gradient', w.grad())
 print('bias:', b.data())
 print('bias gradient', b.grad())
 ```
 
-```{.json .output n=45}
+```{.json .output n=13}
 [
  {
   "name": "stdout",
   "output_type": "stream",
-  "text": "weight: \n[[-0.06529249  0.02144811  0.06565464  0.02129445 -0.02506039]\n [-0.00960142 -0.03902322  0.05551652 -0.05022305 -0.01854134]\n [-0.05638361 -0.00897891  0.06776591  0.05486927 -0.03355227]\n [ 0.04286716  0.00518315  0.0285444  -0.00729033 -0.05596824]]\n<NDArray 4x5 @cpu(0)>\nweight gradient \n[[ 0.  0.  0.  0.  0.]\n [ 0.  0.  0.  0.  0.]\n [ 0.  0.  0.  0.  0.]\n [ 0.  0.  0.  0.  0.]]\n<NDArray 4x5 @cpu(0)>\nbias: \n[ 0.  0.  0.  0.]\n<NDArray 4 @cpu(0)>\nbias gradient \n[ 0.  0.  0.  0.]\n<NDArray 4 @cpu(0)>\n"
+  "text": "weight: \n[[-0.03578042  0.01729142 -0.04774426 -0.02267893 -0.05454748]\n [ 0.02446532  0.02188614 -0.02559176 -0.05065439  0.03896836]\n [-0.04247847  0.06293995 -0.01837847  0.02275376  0.04493906]\n [-0.06809997 -0.05640582  0.01719845  0.04731229  0.02431235]]\n<NDArray 4x5 @cpu(0)>\nweight gradient \n[[ 0.  0.  0.  0.  0.]\n [ 0.  0.  0.  0.  0.]\n [ 0.  0.  0.  0.  0.]\n [ 0.  0.  0.  0.  0.]]\n<NDArray 4x5 @cpu(0)>\nbias: \n[ 0.  0.  0.  0.]\n<NDArray 4 @cpu(0)>\nbias gradient \n[ 0.  0.  0.  0.]\n<NDArray 4 @cpu(0)>\n"
  }
 ]
 ```
@@ -122,30 +122,32 @@ print('bias gradient', b.grad())
     2. 它会返回一个名字到对应Parameter的dict。
     3. 既可以用正常`[]`来访问参数，也可以用`get()`，它不需要填写名字的前缀。
 
-```{.python .input  n=47}
+```{.python .input  n=15}
 params = net.collect_params()
 print(params)
 # sequential8_dense0_bias 这个名字是系统默认生成的，可参考block.md
-print(params['sequential8_dense0_bias'].data())
+#print(params['sequential8_dense0_bias'].data())
 print(params.get('dense0_weight').data())
 ```
 
-```{.json .output n=47}
+```{.json .output n=15}
 [
  {
   "name": "stdout",
   "output_type": "stream",
-  "text": "sequential8_ (\n  Parameter sequential8_dense0_weight (shape=(4, 5), dtype=<class 'numpy.float32'>)\n  Parameter sequential8_dense0_bias (shape=(4,), dtype=<class 'numpy.float32'>)\n  Parameter sequential8_dense1_weight (shape=(2, 4), dtype=<class 'numpy.float32'>)\n  Parameter sequential8_dense1_bias (shape=(2,), dtype=<class 'numpy.float32'>)\n)\n\n[ 0.  0.  0.  0.]\n<NDArray 4 @cpu(0)>\n\n[[-0.06529249  0.02144811  0.06565464  0.02129445 -0.02506039]\n [-0.00960142 -0.03902322  0.05551652 -0.05022305 -0.01854134]\n [-0.05638361 -0.00897891  0.06776591  0.05486927 -0.03355227]\n [ 0.04286716  0.00518315  0.0285444  -0.00729033 -0.05596824]]\n<NDArray 4x5 @cpu(0)>\n"
+  "text": "sequential2_ (\n  Parameter sequential2_dense0_weight (shape=(4, 5), dtype=float32)\n  Parameter sequential2_dense0_bias (shape=(4,), dtype=float32)\n  Parameter sequential2_dense1_weight (shape=(2, 4), dtype=float32)\n  Parameter sequential2_dense1_bias (shape=(2,), dtype=float32)\n)\n\n[[-0.03578042  0.01729142 -0.04774426 -0.02267893 -0.05454748]\n [ 0.02446532  0.02188614 -0.02559176 -0.05065439  0.03896836]\n [-0.04247847  0.06293995 -0.01837847  0.02275376  0.04493906]\n [-0.06809997 -0.05640582  0.01719845  0.04731229  0.02431235]]\n<NDArray 4x5 @cpu(0)>\n"
  }
 ]
 ```
 
 ## 使用不同的初始函数来初始化
 
+
     1. 我们一直在使用默认的`initialize`来初始化权重（除了指定GPU `ctx`外）。它会把所有权重初始化成在`[-0.07, 0.07]`之间均匀分布的随机数。我们可以使用别的初始化方法。例如使用均值为0，方差为0.02的正态分布
     2. 通过制定init参数的值，来设置不同的初始化方式
 
-```{.python .input  n=52}
+
+```{.python .input  n=7}
 from mxnet import init
 # sigma -- σ（西格玛）指标准差
 # 重复初始化需要制定force_reinit=True
@@ -153,12 +155,12 @@ params.initialize(init=init.Normal(sigma=0.02), force_reinit=True)
 print(net[0].weight.data(), net[0].bias.data())
 ```
 
-```{.json .output n=52}
+```{.json .output n=7}
 [
  {
   "name": "stdout",
   "output_type": "stream",
-  "text": "\n[[-0.00174615 -0.02994123 -0.01775906  0.01515305  0.01055657]\n [-0.00683027 -0.01343734 -0.02067723  0.01186648  0.00047213]\n [-0.00053659 -0.00901016  0.01337759 -0.01849548 -0.02293071]\n [-0.00498697  0.02817637 -0.01538535  0.04250335 -0.01058471]]\n<NDArray 4x5 @cpu(0)> \n[ 0.  0.  0.  0.]\n<NDArray 4 @cpu(0)>\n"
+  "text": "\n[[ 0.02804598  0.00220872  0.00701151  0.02721515  0.00500832]\n [ 0.00112992  0.03227538 -0.01813176 -0.00385197 -0.01286032]\n [ 0.03360647 -0.02855298 -0.03083278 -0.02110904 -0.02623655]\n [-0.00293494  0.01282986 -0.01476416  0.04062728  0.01186533]]\n<NDArray 4x5 @cpu(0)> \n[ 0.  0.  0.  0.]\n<NDArray 4 @cpu(0)>\n"
  }
 ]
 ```

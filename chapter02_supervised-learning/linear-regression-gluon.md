@@ -6,7 +6,7 @@
 
 我们生成同样的数据集
 
-```{.python .input  n=2}
+```{.python .input  n=1}
 from mxnet import ndarray as nd
 from mxnet import autograd
 from mxnet import gluon
@@ -26,7 +26,7 @@ y += .01 * nd.random_normal(shape=y.shape)
 
 但这里使用`data`模块来读取数据。
 
-```{.python .input  n=3}
+```{.python .input  n=2}
 batch_size = 10
 dataset = gluon.data.ArrayDataset(X, y)
 data_iter = gluon.data.DataLoader(dataset, batch_size, shuffle=True)
@@ -34,7 +34,7 @@ data_iter = gluon.data.DataLoader(dataset, batch_size, shuffle=True)
 
 读取跟前面一致：
 
-```{.python .input  n=5}
+```{.python .input  n=3}
 for data, label in data_iter:
     print(data, label)
     break
@@ -46,23 +46,25 @@ for data, label in data_iter:
 
 虽然我们之后会介绍如何构造任意结构的神经网络，构建模型最简单的办法是利用`Sequential`来所有层串起来。首先我们定义一个空的模型：
 
-```{.python .input  n=5}
+```{.python .input  n=4}
 net = gluon.nn.Sequential()
 ```
 
-然后我们加入一个`Dense`层，它唯一必须要定义的参数就是输出节点的个数，在线性模型里面是1.
+然后我们加入一个`Dense`层，**它唯一必须要定义的参数就是输出节点的个数**，在线性模型里面是1.
 
-```{.python .input  n=6}
-net.add(gluon.nn.Dense(1))
+```{.python .input  n=5}
+net.add(gluon.nn.Dense(1))  # Dense层即为全连接层 Y = wX + b
 ```
 
-（注意这里我们并没有定义说这个层的输入节点是多少，这个在之后真正给数据的时候系统会自动赋值。我们之后会详细介绍这个特性是如何工作的。）
+（**注意这里我们并没有定义说这个层的输入节点是多少，这个在之后真正给数据的时候系统会自动赋值（因为输入层的大小就等于输入的batch_size的数据个数）**。我们之后会详细介绍这个特性是如何工作的。）
+
+**当用于后续的多层网络时，此特性比较有用，不用人为指定每层的参数向量的大小，交由系统自动推断**
 
 ## 初始化模型参数
 
 在使用前`net`我们必须要初始化模型权重，这里我们使用默认随机初始化方法（之后我们会介绍更多的初始化方法）。
 
-```{.python .input  n=7}
+```{.python .input  n=6}
 net.initialize()
 ```
 
@@ -70,7 +72,7 @@ net.initialize()
 
 `gluon`提供了平方误差函数：
 
-```{.python .input  n=8}
+```{.python .input  n=7}
 square_loss = gluon.loss.L2Loss()
 ```
 
@@ -78,7 +80,7 @@ square_loss = gluon.loss.L2Loss()
 
 同样我们无需手动实现随机梯度下降，我们可以用创建一个`Trainer`的实例，并且将模型参数传递给它就行。
 
-```{.python .input  n=9}
+```{.python .input  n=8}
 trainer = gluon.Trainer(
     net.collect_params(), 'sgd', {'learning_rate': 0.1})
 ```
@@ -87,7 +89,7 @@ trainer = gluon.Trainer(
 
 这里的训练跟前面没有太多区别，唯一的就是我们不再是调用`SGD`，而是`trainer.step`来更新模型。
 
-```{.python .input  n=10}
+```{.python .input  n=9}
 epochs = 5
 batch_size = 10
 for e in range(epochs):
@@ -104,13 +106,17 @@ for e in range(epochs):
 
 比较学到的和真实模型。我们先从`net`拿到需要的层，然后访问其权重和位移。
 
-```{.python .input  n=12}
+```{.python .input  n=10}
 dense = net[0]
 true_w, dense.weight.data()
 ```
 
-```{.python .input  n=13}
+```{.python .input  n=11}
 true_b, dense.bias.data()
+```
+
+```{.python .input}
+dense.weight??
 ```
 
 ## 结论

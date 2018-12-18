@@ -6,7 +6,7 @@
 
 VGG的一个关键是使用很多有着相对小的kernel（$3\times 3$）的卷积层然后接上一个池化层，之后再将这个模块重复多次。下面我们先定义一个这样的块：
 
-```{.python .input  n=1}
+```{.python .input  n=2}
 from mxnet.gluon import nn
 
 def vgg_block(num_convs, channels):
@@ -18,16 +18,6 @@ def vgg_block(num_convs, channels):
         )
     out.add(nn.MaxPool2D(pool_size=2, strides=2))
     return out
-```
-
-```{.json .output n=1}
-[
- {
-  "name": "stderr",
-  "output_type": "stream",
-  "text": "C:\\ProgramData\\Anaconda3\\lib\\site-packages\\h5py\\tests\\old\\test_attrs_data.py:251: DeprecationWarning: invalid escape sequence \\H\n  s = b\"Hello\\x00\\Hello\"\nC:\\ProgramData\\Anaconda3\\lib\\site-packages\\sklearn\\__init__.py:22: DeprecationWarning: invalid escape sequence \\.\n  module='^{0}\\.'.format(re.escape(__name__)))\nC:\\ProgramData\\Anaconda3\\lib\\site-packages\\scipy\\_lib\\_numpy_compat.py:287: DeprecationWarning: invalid escape sequence \\p\n  \"\"\"\nC:\\ProgramData\\Anaconda3\\lib\\site-packages\\sklearn\\externals\\joblib\\func_inspect.py:53: DeprecationWarning: invalid escape sequence \\<\n  '\\<doctest (.*\\.rst)\\[(.*)\\]\\>', source_file).groups()\nC:\\ProgramData\\Anaconda3\\lib\\site-packages\\sklearn\\externals\\joblib\\_memory_helpers.py:10: DeprecationWarning: invalid escape sequence \\s\n  cookie_re = re.compile(\"coding[:=]\\s*([-\\w.]+)\")\nC:\\ProgramData\\Anaconda3\\lib\\site-packages\\asn1crypto\\core.py:104: DeprecationWarning: invalid escape sequence \\d\n  _OID_RE = re.compile('^\\d+(\\.\\d+)*$')\n"
- }
-]
 ```
 
 我们实例化一个这样的块，里面有两个卷积层，每个卷积层输出通道是128：
