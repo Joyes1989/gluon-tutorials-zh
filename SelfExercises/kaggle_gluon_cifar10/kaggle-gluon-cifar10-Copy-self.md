@@ -52,23 +52,25 @@
 
 为了使网页编译快一点，我们在git repo里仅仅存放100个训练样本（'train_tiny.zip'）和1个测试样本（'test_tiny.zip'）。执行以下代码会从git repo里解压生成小样本训练和测试数据，文件夹名称分别为'train_tiny'和'test_tiny'。训练数据标签的压缩文件将被解压成trainLabels.csv。
 
-```{.python .input  n=1}
+```{.python .input  n=3}
 # 如果训练下载的Kaggle的完整数据集，把下面改False
-demo = True
-if demo:
-    import zipfile
-    for fin in ['train_tiny.zip', 'test_tiny.zip', 'trainLabels.csv.zip']:
-        with zipfile.ZipFile('../data/kaggle_cifar10/' + fin, 'r') as zin:
-            zin.extractall('../data/kaggle_cifar10/')
+demo = False
+# if demo:
+#     import zipfile
+#     for fin in ['train_tiny.zip', 'test_tiny.zip', 'trainLabels.csv.zip']:
+#         with zipfile.ZipFile('../data/kaggle_cifar10/' + fin, 'r') as zin:
+#             zin.extractall('../data/kaggle_cifar10/')
 ```
 
 ### 整理数据集
 
-我们定义下面的reorg_cifar10_data函数来整理数据集。整理后，同一类图片将出现在在同一个文件夹下，便于`Gluon`稍后读取。
+我们定义下面的reorg_cifar10_data函数来**整理数据集。整理后，同一类图片将出现在在同一个文件夹下，便于`Gluon`稍后读取**。
 
-函数中的参数如data_dir、train_dir和test_dir对应上述数据存放路径及训练和测试的图片集文件夹名称。参数label_file为训练数据标签的文件名称。参数input_dir是整理后数据集文件夹名称。参数valid_ratio是验证集占原始训练集的比重。以valid_ratio=0.1为例，由于原始训练数据有5万张图片，调参时将有4万5千张图片用于训练（整理后存放在input_dir/train）而另外5千张图片为验证集（整理后存放在input_dir/valid）。
+函数中的参数如data_dir、train_dir和test_dir对应上述数据存放路径及训练和测试的图片集文件夹名称。参数label_file为训练数据标签的文件名称。参数input_dir是整理后数据集文件夹名称。**参数valid_ratio是验证集占原始训练集的比重。以valid_ratio=0.1为例，由于原始训练数据有5万张图片，调参时将有4万5千张图片用于训练（整理后存放在input_dir/train）而另外5千张图片为验证集（整理后存放在input_dir/valid）**。
 
-```{.python .input  n=2}
+这里的test_dir中的图片没有给出label，所以只能用于预测。需要从train_dir中划出一部分图片用作验证集。
+
+```{.python .input  n=4}
 import os
 import shutil
 
@@ -77,27 +79,28 @@ def reorg_cifar10_data(data_dir, label_file, train_dir, test_dir, input_dir, val
     with open(os.path.join(data_dir, label_file), 'r') as f:
         # 跳过文件头行（栏名称）。
         lines = f.readlines()[1:]
-        tokens = [l.rstrip().split(',') for l in lines]
+        tokens = [line.rstrip().split(',') for line in lines]
         idx_label = dict(((int(idx), label) for idx, label in tokens))
     labels = set(idx_label.values())
 
-    num_train = len(os.listdir(os.path.join(data_dir, train_dir)))
+    num_train = len(os.listdir(os.path.join(data_dir, train_dir))) # train_dir中包含了用于train的图像
     num_train_tuning = int(num_train * (1 - valid_ratio))
     assert 0 < num_train_tuning < num_train
     num_train_tuning_per_label = num_train_tuning // len(labels)
     label_count = dict()
 
     def mkdir_if_not_exist(path):
-        if not os.path.exists(os.path.join(*path)):
+        if not os.path.exists(os.path.join(*path)): # joy: 功能类似于获取path中的所有元素，具体原理未知
             os.makedirs(os.path.join(*path))
 
-    # 整理训练和验证集。
+    # 整理训练和验证集。 ---- joy：这里的train_valid是多余的？作用是啥
     for train_file in os.listdir(os.path.join(data_dir, train_dir)):
-        idx = int(train_file.split('.')[0])
+        idx = int(train_file.split('.')[0]) # 文件格式为1.png，2.png -- 需要提取出文件名（图片编号）
         label = idx_label[idx]
-        mkdir_if_not_exist([data_dir, input_dir, 'train_valid', label])
+        mkdir_if_not_exist([data_dir, input_dir, 'train_valid', label]) # 这里的input_dir为拆分后的数据保存的目录
         shutil.copy(os.path.join(data_dir, train_dir, train_file),
                     os.path.join(data_dir, input_dir, 'train_valid', label))
+        # 调整使得每一类的label对应的train数据尽量均匀，从而使得train和valid都比较均匀
         if label not in label_count or label_count[label] < num_train_tuning_per_label:
             mkdir_if_not_exist([data_dir, input_dir, 'train', label])
             shutil.copy(os.path.join(data_dir, train_dir, train_file),
@@ -117,9 +120,9 @@ def reorg_cifar10_data(data_dir, label_file, train_dir, test_dir, input_dir, val
 
 再次强调，为了使网页编译快一点，我们在这里仅仅使用100个训练样本和1个测试样本。训练和测试数据的文件夹名称分别为'train_tiny'和'test_tiny'。相应地，我们仅将批量大小设为1。实际训练和测试时应使用Kaggle的完整数据集。由于数据集较大，批量大小batch_size大小可设为一个较大的整数，例如128。
 
-我们将10%的训练样本作为调参时的验证集。
+**我们将10%的训练样本作为调参时的验证集。**
 
-```{.python .input  n=3}
+```{.python .input  n=5}
 if demo:
     # 注意：此处使用小训练集为便于网页编译。Kaggle的完整数据集应包括5万训练样本。
     train_dir = 'train_tiny'
@@ -130,20 +133,20 @@ if demo:
 else:
     train_dir = 'train'
     test_dir = 'test'
-    batch_size = 128
+    batch_size = 128  # batch_size越大迭代效果越好，但是太大会导致速度慢同时迭代轮数较多
 
-data_dir = '../data/kaggle_cifar10'
+data_dir = 'F:\GitHub_Works\MXNet_Learning\self_data\kaggle_gluon_cifar10'
 label_file = 'trainLabels.csv'
 input_dir = 'train_valid_test'
-valid_ratio = 0.1
+valid_ratio = 0.1   # 验证集占整体数据集的比例
 reorg_cifar10_data(data_dir, label_file, train_dir, test_dir, input_dir, valid_ratio)
 ```
 
 ## 使用Gluon读取整理后的数据集
 
-为避免过拟合，我们在这里使用`image.CreateAugmenter`来增广数据集。例如我们设`rand_mirror=True`即可随机对每张图片做镜面反转。我们也通过`mean`和`std`对彩色图像RGB三个通道分别做[标准化](../chapter_supervised-learning/kaggle-gluon-kfold.md)。以下我们列举了该函数里的所有参数，这些参数都是可以调的。
+**为避免过拟合，我们在这里使用`image.CreateAugmenter`来增广数据集。**例如我们设`rand_mirror=True`即可随机对每张图片做镜面反转。我们也通过`mean`和`std`对彩色图像RGB三个通道分别做[标准化](../chapter_supervised-learning/kaggle-gluon-kfold.md)。以下我们列举了该函数里的所有参数，这些参数都是可以调的。
 
-```{.python .input  n=4}
+```{.python .input  n=6}
 from mxnet import autograd
 from mxnet import gluon
 from mxnet import image
@@ -163,7 +166,7 @@ def transform_train(data, label):
                         pca_noise=0, rand_gray=0, inter_method=2)
     for aug in auglist:
         im = aug(im)
-    # 将数据格式从"高*宽*通道"改为"通道*高*宽"。
+    # 将数据格式从"高*宽*通道"改为"通道*高*宽"。 ---------------------------------  原始数据格式与算法输入格式不一致！！
     im = nd.transpose(im, (2,0,1))
     return (im, nd.array([label]).asscalar().astype('float32'))
 
@@ -179,9 +182,14 @@ def transform_test(data, label):
     return (im, nd.array([label]).asscalar().astype('float32'))
 ```
 
+```{.python .input  n=9}
+print("data_dir: ", data_dir, "input_dir: ", input_dir)
+vision?
+```
+
 接下来，我们可以使用`Gluon`中的`ImageFolderDataset`类来读取整理后的数据集。
 
-```{.python .input  n=5}
+```{.python .input  n=15}
 input_str = data_dir + '/' + input_dir + '/'
 
 # 读取原始图像文件。flag=1说明输入图像有三个通道（彩色）。
@@ -197,7 +205,7 @@ test_ds = vision.ImageFolderDataset(input_str + 'test', flag=1,
 loader = gluon.data.DataLoader
 train_data = loader(train_ds, batch_size, shuffle=True, last_batch='keep')
 valid_data = loader(valid_ds, batch_size, shuffle=True, last_batch='keep')
-train_valid_data = loader(train_valid_ds, batch_size, shuffle=True, last_batch='keep')
+train_valid_data = loader(train_valid_ds, batch_size, shuffle=True, last_batch='keep') # joy --- 这份数据的意义是什么？---原始数据集
 test_data = loader(test_ds, batch_size, shuffle=False, last_batch='keep')
 
 # 交叉熵损失函数。
@@ -208,9 +216,9 @@ softmax_cross_entropy = gluon.loss.SoftmaxCrossEntropyLoss()
 
 我们这里使用了[ResNet-18](resnet-gluon.md)模型。我们使用[hybridizing](../chapter_gluon-advances/hybridize.md)来提升执行效率。
 
-请注意：模型可以重新设计，参数也可以重新调整。
+**请注意：模型可以重新设计，参数也可以重新调整。**
 
-```{.python .input  n=6}
+```{.python .input  n=16}
 from mxnet.gluon import nn
 from mxnet import nd
 
@@ -220,8 +228,7 @@ class Residual(nn.HybridBlock):
         self.same_shape = same_shape
         with self.name_scope():
             strides = 1 if same_shape else 2
-            self.conv1 = nn.Conv2D(channels, kernel_size=3, padding=1,
-                                  strides=strides)
+            self.conv1 = nn.Conv2D(channels, kernel_size=3, padding=1, strides=strides)
             self.bn1 = nn.BatchNorm()
             self.conv2 = nn.Conv2D(channels, kernel_size=3, padding=1)
             self.bn2 = nn.BatchNorm()
@@ -285,7 +292,7 @@ def get_net(ctx):
 
 我们定义模型训练函数。这里我们记录每个epoch的训练时间。这有助于我们比较不同模型设计的时间成本。
 
-```{.python .input  n=7}
+```{.python .input  n=17}
 import datetime
 import sys
 sys.path.append('..')
@@ -299,6 +306,7 @@ def train(net, train_data, valid_data, num_epochs, lr, wd, ctx, lr_period, lr_de
     for epoch in range(num_epochs):
         train_loss = 0.0
         train_acc = 0.0
+        # joy --- 每隔一段时间需要更新一下lr，减缓梯度的更新速度
         if epoch > 0 and epoch % lr_period == 0:
             trainer.set_learning_rate(trainer.learning_rate * lr_decay)
         for data, label in train_data:
@@ -311,7 +319,7 @@ def train(net, train_data, valid_data, num_epochs, lr, wd, ctx, lr_period, lr_de
             train_loss += nd.mean(loss).asscalar()
             train_acc += utils.accuracy(output, label)
         cur_time = datetime.datetime.now()
-        h, remainder = divmod((cur_time - prev_time).seconds, 3600)
+        h, remainder = divmod((cur_time - prev_time).seconds, 3600)  # divmod --- 整数求余
         m, s = divmod(remainder, 60)
         time_str = "Time %02d:%02d:%02d" % (h, m, s)
         if valid_data is not None:
@@ -331,7 +339,7 @@ def train(net, train_data, valid_data, num_epochs, lr, wd, ctx, lr_period, lr_de
 
 我们将依据验证集的结果不断优化模型设计和调整参数。依据下面的参数设置，优化算法的学习率将在每80个epoch自乘0.1。
 
-```{.python .input  n=8}
+```{.python .input  n=18}
 ctx = utils.try_gpu()
 num_epochs = 1
 learning_rate = 0.1
@@ -343,16 +351,6 @@ net = get_net(ctx)
 net.hybridize()
 train(net, train_data, valid_data, num_epochs, learning_rate, 
       weight_decay, ctx, lr_period, lr_decay)
-```
-
-```{.json .output n=8}
-[
- {
-  "name": "stdout",
-  "output_type": "stream",
-  "text": "Epoch 0. Loss: 3.618294, Train acc 0.055556, Valid acc 0.100000, Time 00:00:02, lr 0.1\n"
- }
-]
 ```
 
 ## 对测试集分类
@@ -379,16 +377,6 @@ sorted_ids.sort(key = lambda x:str(x))
 df = pd.DataFrame({'id': sorted_ids, 'label': preds})
 df['label'] = df['label'].apply(lambda x: train_valid_ds.synsets[x])
 df.to_csv('submission.csv', index=False)
-```
-
-```{.json .output n=9}
-[
- {
-  "name": "stdout",
-  "output_type": "stream",
-  "text": "Epoch 0. Loss: 3.582012, Train acc 0.080000, Time 00:00:02, lr 0.1\n"
- }
-]
 ```
 
 上述代码执行完会生成一个`submission.csv`的文件用于在Kaggle上提交。这是Kaggle要求的提交格式。这时我们可以在Kaggle上把对测试集分类的结果提交并查看分类准确率。你需要登录Kaggle网站，打开[CIFAR-10原始图像分类问题](https://www.kaggle.com/c/cifar-10)，并点击下方右侧`Late Submission`按钮。
